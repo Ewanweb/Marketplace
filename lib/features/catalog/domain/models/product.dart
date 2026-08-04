@@ -13,6 +13,16 @@ class Category {
     required this.iconName,
   });
 
+  factory Category.fromJson(Map<String, dynamic> json) {
+    return Category(
+      id: json['id']?.toString() ?? '',
+      nameEn: json['nameEn'] ?? json['name'] ?? '',
+      namePrs: json['namePrs'] ?? json['nameEn'] ?? '',
+      namePs: json['namePs'] ?? json['nameEn'] ?? '',
+      iconName: json['iconName'] ?? 'category',
+    );
+  }
+
   String getName(String langCode) {
     if (langCode == 'ps') return namePs;
     if (langCode == 'prs' || langCode == 'fa') return namePrs;
@@ -32,6 +42,7 @@ class Product {
   final double rating;
   final String imageUrl;
   final String categoryId;
+  final String vendorId;
   final List<String> availableSizes;
   final List<String> availableColors;
 
@@ -47,9 +58,33 @@ class Product {
     required this.rating,
     required this.imageUrl,
     required this.categoryId,
+    required this.vendorId,
     required this.availableSizes,
     required this.availableColors,
   });
+
+  factory Product.fromJson(Map<String, dynamic> json) {
+    return Product(
+      id: json['id']?.toString() ?? '',
+      titleEn: json['titleEn'] ?? json['title'] ?? '',
+      titlePrs: json['titlePrs'] ?? json['titleEn'] ?? '',
+      titlePs: json['titlePs'] ?? json['titleEn'] ?? '',
+      descriptionEn: json['descriptionEn'] ?? json['description'] ?? '',
+      descriptionPrs: json['descriptionPrs'] ?? json['descriptionEn'] ?? '',
+      descriptionPs: json['descriptionPs'] ?? json['descriptionEn'] ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      rating: (json['rating'] as num?)?.toDouble() ?? 5.0,
+      imageUrl: json['imageUrl'] ?? 'https://via.placeholder.com/150',
+      categoryId: json['categoryId']?.toString() ?? '',
+      vendorId: json['vendorId']?.toString() ?? '',
+      availableSizes: json['availableSizes'] != null 
+          ? json['availableSizes'].toString().split(',').map((e) => e.trim()).toList() 
+          : ['M', 'L'],
+      availableColors: json['availableColors'] != null 
+          ? json['availableColors'].toString().split(',').map((e) => e.trim()).toList() 
+          : ['Default'],
+    );
+  }
 
   String getTitle(String langCode) {
     if (langCode == 'ps') return titlePs;

@@ -105,6 +105,41 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<bool> register(String fullName, String email, String phoneNumber, String password) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      final apiClient = _ref.read(apiClientProvider);
+      final locale = _ref.read(localeProvider);
+
+      final response = await apiClient.post(
+        '/register',
+        {
+          'fullName': fullName,
+          'email': email,
+          'phoneNumber': phoneNumber,
+          'password': password,
+        },
+        languageCode: locale.languageCode,
+      );
+
+      if (response != null && response['isSuccess'] == true) {
+        state = state.copyWith(isLoading: false);
+        // Automatically perform login after registration
+        return await login(email, password);
+      } else {
+        final errorMsg = response?['error']?['message'] ?? 'Registration failed. Please check your inputs.';
+        state = state.copyWith(isLoading: false, errorMessage: errorMsg);
+        return false;
+      }
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Connection error during registration.',
+      );
+      return false;
+    }
+  }
+
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);

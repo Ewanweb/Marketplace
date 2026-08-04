@@ -5,7 +5,8 @@ import '../../../../core/localization/locale_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/custom_card.dart';
 import '../../../cart_checkout/presentation/cart_provider.dart';
-import '../../data/mock_data.dart';
+import '../catalog_provider.dart';
+import '../domain/models/product.dart';
 import 'product_detail_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -16,14 +17,18 @@ class HomeScreen extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
     final langCode = locale.languageCode;
     final b10n = ref.watch(backendLocalizationProvider.notifier);
+    final productsAsync = ref.watch(productsProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Section 1: Banners & Vertical Product Cards Stack
-          LayoutBuilder(
+      child: productsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(child: Text('Error loading products: $error')),
+        data: (products) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section 1: Banners & Vertical Product Cards Stack
+            LayoutBuilder(
             builder: (context, constraints) {
               final isWide = constraints.maxWidth > 900;
               if (isWide) {
@@ -45,9 +50,9 @@ class HomeScreen extends ConsumerWidget {
                       flex: 4,
                       child: Row(
                         children: [
-                          Expanded(child: _buildProductVerticalCard(context, ref, MockData.products[0], langCode, b10n.translate('OurPicks', 'Our Picks'), '\$45.00')),
+                          if (products.isNotEmpty) Expanded(child: _buildProductVerticalCard(context, ref, products[0], langCode, b10n.translate('OurPicks', 'Our Picks'), '\$${products[0].price}')),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildProductVerticalCard(context, ref, MockData.products[1], langCode, b10n.translate('YourChoice', 'Your Choice'), '\$280.00')),
+                          if (products.length > 1) Expanded(child: _buildProductVerticalCard(context, ref, products[1], langCode, b10n.translate('YourChoice', 'Your Choice'), '\$${products[1].price}')),
                         ],
                       ),
                     ),
@@ -62,9 +67,9 @@ class HomeScreen extends ConsumerWidget {
                     const SizedBox(height: 20),
                     Row(
                       children: [
-                        Expanded(child: _buildProductVerticalCard(context, ref, MockData.products[0], langCode, b10n.translate('OurPicks', 'Our Picks'), '\$45.00')),
+                        if (products.isNotEmpty) Expanded(child: _buildProductVerticalCard(context, ref, products[0], langCode, b10n.translate('OurPicks', 'Our Picks'), '\$${products[0].price}')),
                         const SizedBox(width: 16),
-                        Expanded(child: _buildProductVerticalCard(context, ref, MockData.products[1], langCode, b10n.translate('YourChoice', 'Your Choice'), '\$280.00')),
+                        if (products.length > 1) Expanded(child: _buildProductVerticalCard(context, ref, products[1], langCode, b10n.translate('YourChoice', 'Your Choice'), '\$${products[1].price}')),
                       ],
                     ),
                   ],
@@ -212,10 +217,10 @@ class HomeScreen extends ConsumerWidget {
   Widget _buildProductVerticalCard(
     BuildContext context,
     WidgetRef ref,
-    dynamic product,
+    Product product,
     String langCode,
-    String tag,
-    String priceTag,
+    String badgeText,
+    String priceText,
   ) {
     return CustomCard(
       padding: EdgeInsets.zero,

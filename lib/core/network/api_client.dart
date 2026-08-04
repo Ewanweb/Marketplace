@@ -38,9 +38,26 @@ class ApiClient {
         }
       }
     } catch (_) {
-      // Fallback
+      // Fallback map handled in provider
     }
     return null;
+  }
+
+  Future<dynamic> get(
+    String endpoint, {
+    required String languageCode,
+    String? token,
+  }) async {
+    try {
+      final url = Uri.parse('$baseApiUrl$endpoint');
+      final response = await _client.get(
+        url,
+        headers: _headers(languageCode, token: token),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      return null;
+    }
   }
 
   Future<dynamic> post(
@@ -49,18 +66,62 @@ class ApiClient {
     required String languageCode,
     String? token,
   }) async {
-    final url = Uri.parse('$baseApiUrl/auth$endpoint');
-    final response = await _client.post(
-      url,
-      headers: _headers(languageCode, token: token),
-      body: jsonEncode(body),
-    );
+    try {
+      final fullEndpoint = endpoint.startsWith('/auth') ? endpoint : (endpoint.startsWith('/') ? endpoint : '/$endpoint');
+      final url = Uri.parse('$baseApiUrl$fullEndpoint');
+      final response = await _client.post(
+        url,
+        headers: _headers(languageCode, token: token),
+        body: jsonEncode(body),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      return null;
+    }
+  }
 
-    return _processResponse(response);
+  Future<dynamic> put(
+    String endpoint,
+    Map<String, dynamic> body, {
+    required String languageCode,
+    String? token,
+  }) async {
+    try {
+      final url = Uri.parse('$baseApiUrl$endpoint');
+      final response = await _client.put(
+        url,
+        headers: _headers(languageCode, token: token),
+        body: jsonEncode(body),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<dynamic> delete(
+    String endpoint, {
+    required String languageCode,
+    String? token,
+  }) async {
+    try {
+      final url = Uri.parse('$baseApiUrl$endpoint');
+      final response = await _client.delete(
+        url,
+        headers: _headers(languageCode, token: token),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      return null;
+    }
   }
 
   dynamic _processResponse(http.Response response) {
-    final body = jsonDecode(response.body);
-    return body;
+    try {
+      final body = jsonDecode(response.body);
+      return body;
+    } catch (_) {
+      return {'isSuccess': false, 'error': {'message': 'Invalid response format.'}};
+    }
   }
 }

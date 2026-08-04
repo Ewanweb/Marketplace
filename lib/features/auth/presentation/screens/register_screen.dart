@@ -31,8 +31,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   void _handleRegister() async {
-    final success = await ref.read(authProvider.notifier).login(
+    final success = await ref.read(authProvider.notifier).register(
+      _fullNameController.text.trim(),
       _emailController.text.trim(),
+      _phoneNumberController.text.trim(),
       _passwordController.text.trim(),
     );
 

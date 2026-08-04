@@ -21,7 +21,7 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
 
 class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   int _selectedIndex = 1;
-  int _topToggleIndex = 1; // 0: Dashboard, 1: Website
+  int _topToggleIndex = 1;
   int _activeCategoryIndex = 0;
 
   final List<Widget> _screens = const [
@@ -98,6 +98,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     final locale = ref.watch(localeProvider);
     final localeNotifier = ref.read(localeProvider.notifier);
     final b10n = ref.watch(backendLocalizationProvider.notifier);
+    final authState = ref.watch(authProvider);
     final cartItems = ref.watch(cartProvider);
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
@@ -105,21 +106,21 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
       textDirection: localeNotifier.textDirection,
       child: Scaffold(
         backgroundColor: AppColors.background,
-        drawer: !isDesktop ? Drawer(child: _buildSidebarContent(context, b10n)) : null,
+        drawer: !isDesktop ? Drawer(child: _buildSidebarContent(context, b10n, authState)) : null,
         body: _topToggleIndex == 0
-            ? const AdminLayout() // Loads Admin Panel when "Dashboard" toggle is selected
+            ? const AdminLayout()
             : Row(
                 children: [
                   if (isDesktop)
                     Container(
                       width: 250,
                       color: Colors.white,
-                      child: _buildSidebarContent(context, b10n),
+                      child: _buildSidebarContent(context, b10n, authState),
                     ),
                   Expanded(
                     child: Column(
                       children: [
-                        _buildTopHeaderBar(context, b10n, localeNotifier, cartItems.length),
+                        _buildTopHeaderBar(context, b10n, localeNotifier, authState, cartItems.length),
                         _buildExploreFilterHeader(context, b10n),
                         Expanded(
                           child: _screens[_selectedIndex],
@@ -133,7 +134,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     );
   }
 
-  Widget _buildSidebarContent(BuildContext context, dynamic b10n) {
+  Widget _buildSidebarContent(BuildContext context, dynamic b10n, AuthState authState) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Column(
@@ -171,20 +172,38 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
           const SizedBox(height: 6),
           _buildOrderMiniItem('Outerwear...', 'view order'),
           const SizedBox(height: 20),
-          InkWell(
-            onTap: _handleLogout,
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Row(
-                children: [
-                  const Icon(Icons.logout, size: 18, color: AppColors.dangerRed),
-                  const SizedBox(width: 8),
-                  Text(b10n.translate('LogOut', 'Log out'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.dangerRed)),
-                ],
+
+          // Conditional Auth Button (Login or Logout based on authState.isAuthenticated)
+          if (authState.isAuthenticated)
+            InkWell(
+              onTap: _handleLogout,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Row(
+                  children: [
+                    const Icon(Icons.logout, size: 18, color: AppColors.dangerRed),
+                    const SizedBox(width: 8),
+                    Text(b10n.translate('LogOut', 'Log out'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.dangerRed)),
+                  ],
+                ),
+              ),
+            )
+          else
+            InkWell(
+              onTap: () => context.go('/login'),
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Row(
+                  children: [
+                    const Icon(Icons.login, size: 18, color: AppColors.royalBlue),
+                    const SizedBox(width: 8),
+                    Text(b10n.translate('LogIn', 'Log in'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.royalBlue)),
+                  ],
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -253,6 +272,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     BuildContext context,
     dynamic b10n,
     dynamic localeNotifier,
+    AuthState authState,
     int cartCount,
   ) {
     return Container(
@@ -336,9 +356,26 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              const CircleAvatar(radius: 14, backgroundImage: NetworkImage('https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100')),
-              const SizedBox(width: 6),
-              const Text('Ryana', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+
+              // Conditional User Profile Header OR Login Button
+              if (authState.isAuthenticated) ...[
+                const CircleAvatar(radius: 14, backgroundImage: NetworkImage('https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100')),
+                const SizedBox(width: 6),
+                Text(authState.userName ?? 'Ryana', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+              ] else ...[
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.royalBlue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                  onPressed: () => context.go('/login'),
+                  icon: const Icon(Icons.login, size: 16),
+                  label: Text(b10n.translate('LogIn', 'Log in'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+              ],
+
               const SizedBox(width: 12),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.language, color: AppColors.textPrimary, size: 20),
@@ -401,7 +438,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
           const SizedBox(width: 10),
           InkWell(
             onTap: () {
-              setState(() => _selectedIndex = 2); // Switches to ShopScreen search
+              setState(() => _selectedIndex = 2);
             },
             child: Container(
               padding: const EdgeInsets.all(10),
