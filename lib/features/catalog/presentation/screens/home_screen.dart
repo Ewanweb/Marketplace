@@ -108,6 +108,7 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -275,7 +276,7 @@ class HomeScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(tag, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                      Text(badgeText, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                       const SizedBox(height: 2),
                       Text(
                         product.getTitle(langCode),
@@ -290,7 +291,7 @@ class HomeScreen extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: const BoxDecoration(color: AppColors.royalBlue, shape: BoxShape.circle),
                   child: Text(
-                    priceTag,
+                    priceText,
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 ),

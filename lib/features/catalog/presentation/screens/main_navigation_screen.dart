@@ -5,6 +5,7 @@ import '../../../../core/localization/backend_localization_provider.dart';
 import '../../../../core/localization/locale_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../admin/presentation/screens/admin_layout.dart';
+import '../../../agency/presentation/screens/agency_application_screen.dart';
 import '../../../auth/presentation/auth_provider.dart';
 import '../../../auth/presentation/screens/dashboard_screen.dart';
 import '../../../cart_checkout/presentation/cart_provider.dart';
@@ -24,12 +25,12 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   int _topToggleIndex = 1;
   int _activeCategoryIndex = 0;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    HomeScreen(),
-    ShopScreen(),
-    CartScreen(),
-    DashboardScreen(),
+  late final List<Widget> _screens = [
+    const HomeScreen(),
+    const HomeScreen(),
+    const ShopScreen(),
+    const CartScreen(),
+    DashboardScreen(onGoToHome: () => setState(() => _selectedIndex = 1)),
   ];
 
   void _handleLogout() async {
@@ -162,6 +163,13 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
           ),
           Text(b10n.translate('QuickActions', 'Quick actions'), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
+          _buildQuickActionButton(Icons.verified_user_outlined, b10n.translate('ApplyAgency', 'درخواست اخذ نمایندگی'), () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AgencyApplicationScreen()),
+            );
+          }),
+          const SizedBox(height: 8),
           _buildQuickActionButton(Icons.add, b10n.translate('RequestForProduct', 'Request for product'), _showRequestProductDialog),
           const SizedBox(height: 8),
           _buildQuickActionButton(Icons.add, b10n.translate('AddMember', 'Add member'), _showAddMemberDialog),
