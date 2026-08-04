@@ -5,7 +5,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/custom_card.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
 import '../../../cart_checkout/presentation/cart_provider.dart';
-import '../../data/mock_data.dart';
+import '../catalog_provider.dart';
+import '../domain/models/product.dart';
 import 'product_detail_screen.dart';
 
 class ShopScreen extends ConsumerStatefulWidget {
@@ -23,12 +24,9 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
   Widget build(BuildContext context) {
     final locale = ref.watch(localeProvider);
     final langCode = locale.languageCode;
-
-    final filteredProducts = MockData.products.where((p) {
-      final matchesSearch = p.getTitle(langCode).toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesCategory = _selectedCategory == null || p.categoryId == _selectedCategory;
-      return matchesSearch && matchesCategory;
-    }).toList();
+    
+    final productsAsync = ref.watch(productsProvider);
+    final categoriesAsync = ref.watch(categoriesProvider);
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -48,69 +46,58 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
           const SizedBox(height: 16),
 
           // Category Filter Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                FilterChip(
-                  label: Text(langCode == 'ps' ? 'ټول' : (langCode == 'prs' || langCode == 'fa' ? 'همه' : 'All')),
-                  selected: _selectedCategory == null,
-                  onSelected: (_) {
-                    setState(() {
-                      _selectedCategory = null;
-                    });
-                  },
-                ),
-                const SizedBox(width: 8),
-                ...MockData.categories.map((cat) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Text(cat.getName(langCode)),
-                      selected: _selectedCategory == cat.id,
-                      onSelected: (selected) {
-                        setState(() {
-                          _selectedCategory = selected ? cat.id : null;
-                        });
-                      },
-                    ),
-                  );
-                }),
-              ],
+          categoriesAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Text('Error loading categories: $err'),
+            data: (categories) => SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  FilterChip(
+                    label: Text(langCode == 'ps' ? 'ټول' : (langCode == 'prs' || langCode == 'fa' ? 'همه' : 'All')),
+                    selected: _selectedCategory == null,
+                    onSelected: (_) {
+                      setState(() {
+                        _selectedCategory = null;
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  ...categories.map((cat) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        label: Text(cat.getName(langCode)),
+                        selected: _selectedCategory == cat.id,
+                        onSelected: (selected) {
+                          setState(() {
+                            _selectedCategory = selected ? cat.id : null;
+                          });
+                        },
+                      ),
+                    );
+                  }),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
           // Products Grid
           Expanded(
-            child: filteredProducts.isEmpty
-                ? Center(
+            child: productsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, stack) => Center(child: Text('Error loading products: $err')),
+              data: (allProducts) {
+                final filteredProducts = allProducts.where((p) {
+                  final matchesSearch = p.getTitle(langCode).toLowerCase().contains(_searchQuery.toLowerCase());
+                  final matchesCategory = _selectedCategory == null || p.categoryId == _selectedCategory;
+                  return matchesSearch && matchesCategory;
+                }).toList();
+
+                if (filteredProducts.isEmpty) {
+                  return Center(
                     child: Text(
-                      langCode == 'ps' ? 'هیڅ توکی ونه موندل شو' : (langCode == 'prs' || langCode == 'fa' ? 'هیچ محصولی یافت نشد' : 'No products found'),
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                  )
-                : GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.70,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                    ),
-                    itemCount: filteredProducts.length,
-                    itemBuilder: (context, index) {
-                      final product = filteredProducts[index];
-                      return CustomCard(
-                        padding: EdgeInsets.zero,
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => ProductDetailScreen(product: product),
-                            ),
-                          );
-                        },
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
                               child: Stack(
