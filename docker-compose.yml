@@ -1,0 +1,29 @@
+services:
+  marketplace.db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: marketplace_db
+    user: root
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=Marketplace_SA_Pass123!
+    ports:
+      - "14333:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql/data
+
+  marketplace.api:
+    image: marketplace-api
+    container_name: marketplace_api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=marketplace.db,1433;Database=MarketplaceDb;User Id=sa;Password=Marketplace_SA_Pass123!;TrustServerCertificate=True;
+    ports:
+      - "8085:8080"
+    depends_on:
+      - marketplace.db
+
+volumes:
+  sqlserver_data:
