@@ -11,6 +11,12 @@ services:
     volumes:
       - sqlserver_data:/var/opt/mssql/data
 
+  marketplace.redis:
+    image: redis:7-alpine
+    container_name: marketplace_redis
+    ports:
+      - "6379:6379"
+
   marketplace.api:
     image: marketplace-api
     container_name: marketplace_api
@@ -20,10 +26,27 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=marketplace.db,1433;Database=MarketplaceDb;User Id=sa;Password=Marketplace_SA_Pass123!;TrustServerCertificate=True;
+      - ConnectionStrings__Redis=marketplace.redis:6379
+      - JwtSettings__SecretKey=SuperSecretKeyForMarketplaceSecurityService2026!
+      - JwtSettings__Issuer=MarketplaceAPI
+      - JwtSettings__Audience=MarketplaceClients
+      - JwtSettings__ExpiryMinutes=15
     ports:
       - "8085:8080"
     depends_on:
       - marketplace.db
+      - marketplace.redis
+
+  marketplace.web:
+    image: marketplace-web
+    container_name: marketplace_web
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - marketplace.api
 
 volumes:
   sqlserver_data:

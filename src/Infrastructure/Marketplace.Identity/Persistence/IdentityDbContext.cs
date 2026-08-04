@@ -1,0 +1,127 @@
+using Marketplace.Application.Common.Interfaces;
+using Marketplace.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace Marketplace.Identity.Persistence;
+
+public sealed class IdentityDbContext : DbContext, IIdentityDbContext
+{
+    public IdentityDbContext(DbContextOptions<IdentityDbContext> options)
+        : base(options)
+    {
+    }
+
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<UserRole> UserRoles => Set<UserRole>();
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<Category> Categories => Set<Category>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<User>(builder =>
+        {
+            builder.HasKey(u => u.Id);
+            builder.HasIndex(u => u.Email).IsUnique();
+            builder.Property(u => u.Email).HasMaxLength(256).IsRequired();
+            builder.Property(u => u.PasswordHash).IsRequired();
+        });
+
+        modelBuilder.Entity<Role>(builder =>
+        {
+            builder.HasKey(r => r.Id);
+            builder.HasIndex(r => r.Name).IsUnique();
+            builder.Property(r => r.Name).HasMaxLength(100).IsRequired();
+        });
+
+        modelBuilder.Entity<Permission>(builder =>
+        {
+            builder.HasKey(p => p.Id);
+            builder.HasIndex(p => p.Code).IsUnique();
+            builder.Property(p => p.Code).HasMaxLength(100).IsRequired();
+        });
+
+        modelBuilder.Entity<UserRole>(builder =>
+        {
+            builder.HasKey(ur => new { ur.UserId, ur.RoleId });
+            builder.HasOne(ur => ur.User).WithMany(u => u.UserRoles).HasForeignKey(ur => ur.UserId);
+            builder.HasOne(ur => ur.Role).WithMany(r => r.UserRoles).HasForeignKey(ur => ur.RoleId);
+        });
+
+        modelBuilder.Entity<RolePermission>(builder =>
+        {
+            builder.HasKey(rp => new { rp.RoleId, rp.PermissionId });
+            builder.HasOne(rp => rp.Role).WithMany(r => r.RolePermissions).HasForeignKey(rp => rp.RoleId);
+            builder.HasOne(rp => rp.Permission).WithMany(p => p.RolePermissions).HasForeignKey(rp => rp.PermissionId);
+        });
+
+        modelBuilder.Entity<RefreshToken>(builder =>
+        {
+            builder.HasKey(t => t.Id);
+            builder.HasIndex(t => t.Token).IsUnique();
+            builder.HasOne(t => t.User).WithMany(u => u.RefreshTokens).HasForeignKey(t => t.UserId);
+        });
+
+        modelBuilder.Entity<AuditLog>(builder =>
+        {
+            builder.HasKey(a => a.Id);
+            builder.Property(a => a.Action).HasMaxLength(100).IsRequired();
+        });
+
+        var catSpicesId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var catCarpetsId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var catClothingId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var catElectronicsId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+
+        modelBuilder.Entity<Category>(builder =>
+        {
+            builder.HasKey(c => c.Id);
+            builder.Property(c => c.NameEn).HasMaxLength(150).IsRequired();
+            builder.Property(c => c.NamePrs).HasMaxLength(150).IsRequired();
+            builder.Property(c => c.NamePs).HasMaxLength(150).IsRequired();
+
+            builder.HasData(
+                new { Id = catSpicesId, NameEn = "Dry Fruits & Saffron", NamePrs = "میوه خشک و زعفران ممتاز", NamePs = "وچه میوه او ممتاز زعفران", IconName = "local_florist", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = catCarpetsId, NameEn = "Handmade Afghan Carpets", NamePrs = "قالین‌های دستی افغانی", NamePs = "د افغانستان لاسي غالۍ", IconName = "square_foot", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = catClothingId, NameEn = "Traditional Apparel", NamePrs = "پوشاک عنعنوی و مدرن", NamePs = "عنعنوي او عصري جامې", IconName = "checkroom", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = catElectronicsId, NameEn = "Electronics & Gadgets", NamePrs = "لوازم الکترونیکی و دیجیتال", NamePs = "الکټرونیکي او ډیجیټل توکي", IconName = "devices", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+            );
+        });
+
+        modelBuilder.Entity<Product>(builder =>
+        {
+            builder.HasKey(p => p.Id);
+            builder.Property(p => p.TitleEn).HasMaxLength(250).IsRequired();
+            builder.Property(p => p.Price).HasPrecision(18, 2);
+            builder.HasOne(p => p.Category).WithMany(c => c.Products).HasForeignKey(p => p.CategoryId);
+
+            builder.HasData(
+                new { Id = Guid.Parse("a1111111-1111-1111-1111-111111111111"), TitleEn = "Herat Red Gold Premium Saffron 10g", TitlePrs = "زعفران ممتاز طلای سرخ هرات ۱۰ گرام", TitlePs = "د هرات ممتاز سور زر زعفران ۱۰ ګرامه", DescriptionEn = "100% pure organic super nagin saffron harvested from Herat fields.", DescriptionPrs = "زعفران ۱۰۰٪ طبیعی و خالص سوپر نگین برداشت شده از مزارع ولایت هرات.", DescriptionPs = "د هرات ولایت له کروندو څخه راټول شوي ۱۰۰٪ طبعي او خالص سوپر نګین زعفران.", Price = 45.00m, StockQuantity = 100, Rating = 4.9, ImageUrl = "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=500", CategoryId = catSpicesId, AvailableSizes = "5g,10g,25g", AvailableColors = "Red", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = Guid.Parse("a2222222-2222-2222-2222-222222222222"), TitleEn = "Handcrafted Wool Silk Rug (1.5x2m)", TitlePrs = "قالین دستی ابریشمی پشمی هرات (۱.۵ در ۲ متر)", TitlePs = "د پشم او ورېښمو لاسي غالۍ (۱.۵ په ۲ متره)", DescriptionEn = "Authentic hand-knotted traditional Afghan carpet with intricate patterns.", DescriptionPrs = "قالین بافته‌شده با دست با نخ‌های ابریشمی و پشم طبیعی با نقش‌های اصیل عنعنوی.", DescriptionPs = "د وریښمنو او طبعي پشم تارونو څخه په لاس اوبدل شوې د اصیلو نقشو غالۍ.", Price = 280.00m, StockQuantity = 20, Rating = 4.8, ImageUrl = "https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=500", CategoryId = catCarpetsId, AvailableSizes = "1.5x2m,2x3m", AvailableColors = "Maroon,Navy,Gold", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+            );
+        });
+
+        modelBuilder.Entity<Order>(builder =>
+        {
+            builder.HasKey(o => o.Id);
+            builder.Property(o => o.OrderNumber).HasMaxLength(50).IsRequired();
+            builder.Property(o => o.TotalAmount).HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<OrderItem>(builder =>
+        {
+            builder.HasKey(i => i.Id);
+            builder.Property(i => i.UnitPrice).HasPrecision(18, 2);
+            builder.HasOne(i => i.Order).WithMany(o => o.Items).HasForeignKey(i => i.OrderId);
+            builder.HasOne(i => i.Product).WithMany().HasForeignKey(i => i.ProductId);
+        });
+    }
+}
