@@ -46,6 +46,7 @@ public sealed class CreateOrderCommandHandler : IRequestHandler<CreateOrderComma
         {
             if (products.TryGetValue(itemReq.ProductId, out var product))
             {
+                product.DecreaseStock(itemReq.Quantity);
                 orderItems.Add(OrderItem.Create(
                     product.Id,
                     product.TitleEn,

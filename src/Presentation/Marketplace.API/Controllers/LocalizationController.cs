@@ -12,7 +12,8 @@ public class LocalizationController : ApiControllerBase
     [HttpGet("strings")]
     public async Task<IActionResult> GetLocalizationStrings(CancellationToken cancellationToken)
     {
-        var result = await Sender.Send(new GetLocalizationStringsQuery(), cancellationToken);
+        var acceptLanguage = Request.Headers["Accept-Language"].ToString();
+        var result = await Sender.Send(new GetLocalizationStringsQuery(acceptLanguage), cancellationToken);
         return HandleResult(result);
     }
 }

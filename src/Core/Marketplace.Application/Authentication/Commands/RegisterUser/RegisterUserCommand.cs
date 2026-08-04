@@ -8,12 +8,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Marketplace.Application.Authentication.Commands.RegisterUser;
 
-public sealed record RegisterUserCommand(string Email, string Password) : IRequest<Result<Guid>>;
+public sealed record RegisterUserCommand(
+    string FullName,
+    string Email,
+    string? PhoneNumber,
+    string Password) : IRequest<Result<Guid>>;
 
 public sealed class RegisterUserCommandValidator : AbstractValidator<RegisterUserCommand>
 {
     public RegisterUserCommandValidator()
     {
+        RuleFor(x => x.FullName)
+            .NotEmpty().WithMessage("Full Name is required.")
+            .MaximumLength(150);
+
         RuleFor(x => x.Email)
             .NotEmpty().WithMessage(_ => AuthMessages.EmailRequired)
             .EmailAddress().WithMessage(_ => AuthMessages.InvalidEmailFormat);
@@ -57,7 +65,7 @@ public sealed class RegisterUserCommandHandler : IRequestHandler<RegisterUserCom
         }
 
         var passwordHash = _passwordHasher.HashPassword(request.Password);
-        var user = User.Create(normalizedEmail, passwordHash);
+        var user = User.Create(normalizedEmail, passwordHash, request.FullName, request.PhoneNumber);
 
         var verificationToken = Guid.NewGuid().ToString("N");
         user.SetEmailVerificationToken(verificationToken, TimeSpan.FromHours(24));

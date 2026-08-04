@@ -1,9 +1,11 @@
 using Marketplace.Application.Admin.Queries.GetAdminDashboardStats;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Marketplace.API.Controllers;
 
 [Route("api/v1/admin/dashboard")]
+[Authorize(Roles = "Admin")]
 public class AdminDashboardController : ApiControllerBase
 {
     /// <summary>

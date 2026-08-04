@@ -70,6 +70,14 @@ public class Product
         ImageUrl = imageUrl;
     }
 
+    public void DecreaseStock(int quantity)
+    {
+        if (quantity > 0)
+        {
+            StockQuantity = Math.Max(0, StockQuantity - quantity);
+        }
+    }
+
     public void SoftDelete()
     {
         IsActive = false;

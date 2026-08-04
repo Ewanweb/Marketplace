@@ -3,7 +3,9 @@ namespace Marketplace.Domain.Entities;
 public class User
 {
     public Guid Id { get; private set; }
+    public string FullName { get; private set; } = string.Empty;
     public string Email { get; private set; } = string.Empty;
+    public string? PhoneNumber { get; private set; }
     public string PasswordHash { get; private set; } = string.Empty;
     public bool IsEmailConfirmed { get; private set; }
     public string? EmailVerificationToken { get; private set; }
@@ -29,7 +31,7 @@ public class User
 
     private User() { }
 
-    public static User Create(string email, string passwordHash)
+    public static User Create(string email, string passwordHash, string fullName = "", string? phoneNumber = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(email);
         ArgumentException.ThrowIfNullOrWhiteSpace(passwordHash);
@@ -37,7 +39,9 @@ public class User
         return new User
         {
             Id = Guid.NewGuid(),
+            FullName = (fullName ?? string.Empty).Trim(),
             Email = email.ToLowerInvariant().Trim(),
+            PhoneNumber = phoneNumber?.Trim(),
             PasswordHash = passwordHash,
             CreatedAt = DateTime.UtcNow,
             IsActive = true,

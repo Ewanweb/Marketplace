@@ -1,5 +1,6 @@
 using Marketplace.Application.Catalog.Commands.CreateProduct;
 using Marketplace.Application.Catalog.Queries.GetProducts;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Marketplace.API.Controllers;
@@ -20,6 +21,7 @@ public class ProductsController : ApiControllerBase
     /// Admin endpoint to create a new product item.
     /// </summary>
     [HttpPost]
+    [Authorize]
     public async Task<IActionResult> CreateProduct([FromBody] CreateProductCommand command, CancellationToken cancellationToken)
     {
         var result = await Sender.Send(command, cancellationToken);
