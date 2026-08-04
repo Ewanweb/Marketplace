@@ -119,7 +119,7 @@ try
 
     using (var scope = app.Services.CreateScope())
     {
-        var context = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<Marketplace.Identity.Persistence.ApplicationDbContext>();
         context.Database.Migrate();
     }
     app.UseMiddleware<GlobalExceptionHandlerMiddleware>();

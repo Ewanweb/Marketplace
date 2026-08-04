@@ -16,10 +16,10 @@ public sealed record Verify2FAEnableCommand(Guid UserId, string Code) : IRequest
 
 public sealed class Enable2FACommandHandler : IRequestHandler<Enable2FACommand, Result<Enable2FAResponse>>
 {
-    private readonly IIdentityDbContext _dbContext;
+    private readonly IApplicationDbContext _dbContext;
     private readonly ITotpService _totpService;
 
-    public Enable2FACommandHandler(IIdentityDbContext dbContext, ITotpService totpService)
+    public Enable2FACommandHandler(IApplicationDbContext dbContext, ITotpService totpService)
     {
         _dbContext = dbContext;
         _totpService = totpService;
@@ -42,10 +42,10 @@ public sealed class Enable2FACommandHandler : IRequestHandler<Enable2FACommand, 
 
 public sealed class Verify2FAEnableCommandHandler : IRequestHandler<Verify2FAEnableCommand, Result<Verify2FAEnableResponse>>
 {
-    private readonly IIdentityDbContext _dbContext;
+    private readonly IApplicationDbContext _dbContext;
     private readonly ITotpService _totpService;
 
-    public Verify2FAEnableCommandHandler(IIdentityDbContext dbContext, ITotpService totpService)
+    public Verify2FAEnableCommandHandler(IApplicationDbContext dbContext, ITotpService totpService)
     {
         _dbContext = dbContext;
         _totpService = totpService;

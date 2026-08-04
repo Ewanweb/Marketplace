@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Marketplace.Identity.Persistence;
 
-public sealed class ApplicationDbContext : DbContext, IIdentityDbContext
+public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
