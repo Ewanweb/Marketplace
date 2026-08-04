@@ -6,7 +6,7 @@ import '../../../../shared/widgets/custom_card.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
 import '../../../cart_checkout/presentation/cart_provider.dart';
 import '../catalog_provider.dart';
-import '../domain/models/product.dart';
+import '../../domain/models/product.dart';
 import 'product_detail_screen.dart';
 
 class ShopScreen extends ConsumerStatefulWidget {

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/localization/locale_provider.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_card.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
-import '../../catalog/data/mock_data.dart';
-import '../../catalog/domain/models/product.dart';
+import '../../auth/presentation/auth_provider.dart';
+import '../../catalog/presentation/catalog_provider.dart';
 
 class AdminProductsScreen extends ConsumerStatefulWidget {
   const AdminProductsScreen({super.key});
@@ -15,13 +16,7 @@ class AdminProductsScreen extends ConsumerStatefulWidget {
 }
 
 class _AdminProductsScreenState extends ConsumerState<AdminProductsScreen> {
-  late List<Product> _productList;
-
-  @override
-  void initState() {
-    super.initState();
-    _productList = List.from(MockData.products);
-  }
+  bool _isLoading = false;
 
   void _showAddProductDialog() {
     final titleEnController = TextEditingController();
@@ -37,7 +32,7 @@ class _AdminProductsScreenState extends ConsumerState<AdminProductsScreen> {
             children: [
               CustomTextField(
                 controller: titleEnController,
-                labelText: 'Product Title',
+                labelText: 'Product Title (EN)',
               ),
               const SizedBox(height: 12),
               CustomTextField(
@@ -52,32 +47,57 @@ class _AdminProductsScreenState extends ConsumerState<AdminProductsScreen> {
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancel'),
             ),
-            CustomButton(
-              text: 'Save Product',
-              onPressed: () {
-                if (titleEnController.text.isNotEmpty && priceController.text.isNotEmpty) {
-                  final newProduct = Product(
-                    id: 'p_${DateTime.now().millisecondsSinceEpoch}',
-                    titleEn: titleEnController.text,
-                    titlePrs: titleEnController.text,
-                    titlePs: titleEnController.text,
-                    descriptionEn: 'New added product item',
-                    descriptionPrs: 'محصول جدید اضافه شده',
-                    descriptionPs: 'نوی زیات شوی توکی',
-                    price: double.tryParse(priceController.text) ?? 10.0,
-                    rating: 5.0,
-                    imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500',
-                    categoryId: 'cat_electronics',
-                    availableSizes: ['M'],
-                    availableColors: ['Black'],
+            ElevatedButton(
+              onPressed: () async {
+                final price = double.tryParse(priceController.text) ?? 0.0;
+                final titleEn = titleEnController.text.trim();
+                
+                if (titleEn.isNotEmpty && price > 0) {
+                  setState(() => _isLoading = true);
+                  Navigator.pop(context);
+
+                  final apiClient = ref.read(apiClientProvider);
+                  final locale = ref.read(localeProvider);
+                  final token = ref.read(authProvider).token;
+
+                  final body = {
+                    "titleEn": titleEn,
+                    "titlePrs": titleEn, // Defaulting for now
+                    "titlePs": titleEn,
+                    "descriptionEn": "Default description",
+                    "descriptionPrs": "توضیحات پیش فرض",
+                    "descriptionPs": "توضیحات پیش فرض",
+                    "price": price,
+                    "stockQuantity": 10,
+                    "imageUrl": "https://via.placeholder.com/150",
+                    "categoryId": "11111111-1111-1111-1111-111111111111", // Default Category
+                    "vendorId": "66666666-6666-6666-6666-666666666666", // Default Vendor
+                    "availableSizes": "M,L",
+                    "availableColors": "Default"
+                  };
+
+                  final response = await apiClient.post(
+                    '/products',
+                    body,
+                    languageCode: locale.languageCode,
+                    token: token,
                   );
 
-                  setState(() {
-                    _productList.add(newProduct);
-                  });
-                  Navigator.pop(context);
+                  setState(() => _isLoading = false);
+
+                  if (response != null && response['isSuccess'] == true && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Product created successfully')),
+                    );
+                    ref.invalidate(productsProvider);
+                  } else if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to create product: ${response?['error']?['message'] ?? 'Unknown'}')),
+                    );
+                  }
                 }
               },
+              child: const Text('Add'),
             ),
           ],
         );
@@ -85,10 +105,38 @@ class _AdminProductsScreenState extends ConsumerState<AdminProductsScreen> {
     );
   }
 
+  Future<void> _deleteProduct(String id) async {
+    setState(() => _isLoading = true);
+    
+    final apiClient = ref.read(apiClientProvider);
+    final locale = ref.read(localeProvider);
+    final token = ref.read(authProvider).token;
+
+    final response = await apiClient.delete(
+      '/products/$id',
+      languageCode: locale.languageCode,
+      token: token,
+    );
+
+    setState(() => _isLoading = false);
+
+    if (response != null && response['isSuccess'] == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Product deleted successfully')),
+      );
+      ref.invalidate(productsProvider);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete product: ${response?['error']?['message'] ?? 'Unknown'}')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = ref.watch(localeProvider);
     final langCode = locale.languageCode;
+    final productsAsync = ref.watch(productsProvider);
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -110,62 +158,65 @@ class _AdminProductsScreenState extends ConsumerState<AdminProductsScreen> {
             ],
           ),
           const SizedBox(height: 24),
+          
+          if (_isLoading) const LinearProgressIndicator(),
+          if (_isLoading) const SizedBox(height: 12),
 
           // Product List Table
           Expanded(
-            child: ListView.separated(
-              itemCount: _productList.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final product = _productList[index];
-                return CustomCard(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          image: DecorationImage(
-                            image: NetworkImage(product.imageUrl),
-                            fit: BoxFit.cover,
+            child: productsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, stack) => Center(child: Text('Error: $err')),
+              data: (products) => ListView.separated(
+                itemCount: products.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final product = products[index];
+                  return CustomCard(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            image: DecorationImage(
+                              image: NetworkImage(product.imageUrl),
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              product.getTitle(langCode),
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '\$${product.price.toStringAsFixed(2)}',
-                              style: const TextStyle(color: Color(0xFFA29BFE), fontWeight: FontWeight.bold),
-                            ),
-                          ],
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                product.getTitle(langCode),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '\$${product.price.toStringAsFixed(2)}',
+                                style: const TextStyle(color: Color(0xFFA29BFE), fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.white70),
-                        onPressed: () {},
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                        onPressed: () {
-                          setState(() {
-                            _productList.removeAt(index);
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              },
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.white70),
+                          onPressed: () {},
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                          onPressed: () => _deleteProduct(product.id),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ],

@@ -1,15 +1,71 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/localization/locale_provider.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_card.dart';
+import '../../../auth/presentation/auth_provider.dart';
 import '../cart_provider.dart';
 
-class CartScreen extends ConsumerWidget {
+class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends ConsumerState<CartScreen> {
+  bool _isCheckingOut = false;
+
+  Future<void> _handleCheckout() async {
+    final cartItems = ref.read(cartProvider);
+    if (cartItems.isEmpty) return;
+
+    setState(() => _isCheckingOut = true);
+
+    final apiClient = ref.read(apiClientProvider);
+    final locale = ref.read(localeProvider);
+    final token = ref.read(authProvider).token;
+
+    final itemsPayload = cartItems.map((item) {
+      return {
+        "productId": item.product.id,
+        "quantity": item.quantity,
+      };
+    }).toList();
+
+    final response = await apiClient.post(
+      '/orders',
+      {
+        "customerName": "Customer", // This should ideally come from User Profile
+        "items": itemsPayload
+      },
+      languageCode: locale.languageCode,
+      token: token,
+    );
+
+    setState(() => _isCheckingOut = false);
+
+    if (response != null && response['isSuccess'] == true && mounted) {
+      ref.read(cartProvider.notifier).clearCart();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Order placed successfully! Thank you for buying.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to place order: ${response?['error']?['message'] ?? 'Unknown error'}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final cartItems = ref.watch(cartProvider);
     final cartNotifier = ref.read(cartProvider.notifier);
     final locale = ref.watch(localeProvider);
@@ -48,7 +104,7 @@ class CartScreen extends ConsumerWidget {
                       width: 70,
                       height: 70,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(12),
                         image: DecorationImage(
                           image: NetworkImage(item.product.imageUrl),
                           fit: BoxFit.cover,
@@ -63,22 +119,11 @@ class CartScreen extends ConsumerWidget {
                           Text(
                             item.product.getTitle(langCode),
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Size: ${item.selectedSize} | Color: ${item.selectedColor}',
-                            style: const TextStyle(fontSize: 11, color: Colors.white54),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '\$${item.totalPrice.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              color: Color(0xFFA29BFE),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
+                            '\$${item.product.price.toStringAsFixed(2)}',
+                            style: const TextStyle(color: Color(0xFFA29BFE), fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -86,16 +131,24 @@ class CartScreen extends ConsumerWidget {
                     Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.remove_circle_outline, size: 20),
-                          onPressed: () => cartNotifier.updateQuantity(item, -1),
+                          icon: const Icon(Icons.remove_circle_outline, color: Colors.white70),
+                          onPressed: () {
+                            if (item.quantity > 1) {
+                              cartNotifier.updateQuantity(item, -1);
+                            } else {
+                              cartNotifier.removeFromCart(item);
+                            }
+                          },
                         ),
                         Text(
                           '${item.quantity}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.add_circle_outline, size: 20),
-                          onPressed: () => cartNotifier.updateQuantity(item, 1),
+                          icon: const Icon(Icons.add_circle_outline, color: Colors.white70),
+                          onPressed: () {
+                            cartNotifier.updateQuantity(item, 1);
+                          },
                         ),
                       ],
                     ),
@@ -130,18 +183,12 @@ class CartScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              CustomButton(
-                text: langCode == 'ps' ? 'د پېرلو منل او تادیه' : (langCode == 'prs' || langCode == 'fa' ? 'تکمیل سفارش و پرداخت' : 'Proceed to Checkout'),
-                onPressed: () {
-                  cartNotifier.clearCart();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Order placed successfully! Thank you for buying.'),
-                      backgroundColor: Colors.green,
+              _isCheckingOut
+                  ? const Center(child: CircularProgressIndicator())
+                  : CustomButton(
+                      text: langCode == 'ps' ? 'د پېرلو منل او تادیه' : (langCode == 'prs' || langCode == 'fa' ? 'تکمیل سفارش و پرداخت' : 'Proceed to Checkout'),
+                      onPressed: _handleCheckout,
                     ),
-                  );
-                },
-              ),
             ],
           ),
         ),
