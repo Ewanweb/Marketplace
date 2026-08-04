@@ -15,9 +15,9 @@ public sealed record GetCategoriesQuery() : IRequest<Result<List<CategoryDto>>>;
 
 public sealed class GetCategoriesQueryHandler : IRequestHandler<GetCategoriesQuery, Result<List<CategoryDto>>>
 {
-    private readonly IIdentityDbContext _dbContext;
+    private readonly IApplicationDbContext _dbContext;
 
-    public GetCategoriesQueryHandler(IIdentityDbContext dbContext)
+    public GetCategoriesQueryHandler(IApplicationDbContext dbContext)
     {
         _dbContext = dbContext;
     }

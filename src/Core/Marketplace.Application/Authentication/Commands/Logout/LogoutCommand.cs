@@ -13,9 +13,9 @@ public sealed class LogoutCommandHandler :
     IRequestHandler<LogoutCommand, Result>,
     IRequestHandler<RevokeAllTokensCommand, Result>
 {
-    private readonly IIdentityDbContext _dbContext;
+    private readonly IApplicationDbContext _dbContext;
 
-    public LogoutCommandHandler(IIdentityDbContext dbContext)
+    public LogoutCommandHandler(IApplicationDbContext dbContext)
     {
         _dbContext = dbContext;
     }

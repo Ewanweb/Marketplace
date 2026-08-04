@@ -39,12 +39,12 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, Result<L
     private const int MaxFailedAttempts = 5;
     private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
-    private readonly IIdentityDbContext _dbContext;
+    private readonly IApplicationDbContext _dbContext;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
 
     public LoginCommandHandler(
-        IIdentityDbContext dbContext,
+        IApplicationDbContext dbContext,
         IPasswordHasher passwordHasher,
         IJwtTokenGenerator jwtTokenGenerator)
     {

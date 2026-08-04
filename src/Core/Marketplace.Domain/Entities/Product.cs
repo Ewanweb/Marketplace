@@ -15,6 +15,10 @@ public class Product
     public string ImageUrl { get; private set; } = string.Empty;
     public Guid CategoryId { get; private set; }
     public Category Category { get; private set; } = null!;
+    
+    public Guid VendorId { get; private set; }
+    public Vendor Vendor { get; private set; } = null!;
+    
     public string AvailableSizes { get; private set; } = "M,L";
     public string AvailableColors { get; private set; } = "Default";
     public bool IsActive { get; private set; }
@@ -33,6 +37,7 @@ public class Product
         int stockQuantity,
         string imageUrl,
         Guid categoryId,
+        Guid vendorId,
         string availableSizes = "M,L",
         string availableColors = "Default",
         double rating = 5.0)
@@ -50,6 +55,7 @@ public class Product
             StockQuantity = stockQuantity,
             ImageUrl = imageUrl,
             CategoryId = categoryId,
+            VendorId = vendorId,
             AvailableSizes = availableSizes,
             AvailableColors = availableColors,
             Rating = rating,

@@ -17,9 +17,9 @@ public sealed record GetAdminDashboardStatsQuery() : IRequest<Result<AdminDashbo
 
 public sealed class GetAdminDashboardStatsQueryHandler : IRequestHandler<GetAdminDashboardStatsQuery, Result<AdminDashboardStatsDto>>
 {
-    private readonly IIdentityDbContext _dbContext;
+    private readonly IApplicationDbContext _dbContext;
 
-    public GetAdminDashboardStatsQueryHandler(IIdentityDbContext dbContext)
+    public GetAdminDashboardStatsQueryHandler(IApplicationDbContext dbContext)
     {
         _dbContext = dbContext;
     }

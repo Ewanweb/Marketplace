@@ -23,10 +23,10 @@ public sealed class RefreshTokenCommandValidator : AbstractValidator<RefreshToke
 
 public sealed class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, Result<RefreshTokenResponse>>
 {
-    private readonly IIdentityDbContext _dbContext;
+    private readonly IApplicationDbContext _dbContext;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
 
-    public RefreshTokenCommandHandler(IIdentityDbContext dbContext, IJwtTokenGenerator jwtTokenGenerator)
+    public RefreshTokenCommandHandler(IApplicationDbContext dbContext, IJwtTokenGenerator jwtTokenGenerator)
     {
         _dbContext = dbContext;
         _jwtTokenGenerator = jwtTokenGenerator;

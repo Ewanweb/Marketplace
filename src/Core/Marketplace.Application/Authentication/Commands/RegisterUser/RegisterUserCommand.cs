@@ -38,12 +38,12 @@ public sealed class RegisterUserCommandValidator : AbstractValidator<RegisterUse
 
 public sealed class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, Result<Guid>>
 {
-    private readonly IIdentityDbContext _dbContext;
+    private readonly IApplicationDbContext _dbContext;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IEmailService _emailService;
 
     public RegisterUserCommandHandler(
-        IIdentityDbContext dbContext,
+        IApplicationDbContext dbContext,
         IPasswordHasher passwordHasher,
         IEmailService emailService)
     {

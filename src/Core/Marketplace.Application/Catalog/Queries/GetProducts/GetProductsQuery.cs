@@ -24,9 +24,9 @@ public sealed record GetProductsQuery(
 
 public sealed class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, Result<List<ProductDto>>>
 {
-    private readonly IIdentityDbContext _dbContext;
+    private readonly IApplicationDbContext _dbContext;
 
-    public GetProductsQueryHandler(IIdentityDbContext dbContext)
+    public GetProductsQueryHandler(IApplicationDbContext dbContext)
     {
         _dbContext = dbContext;
     }

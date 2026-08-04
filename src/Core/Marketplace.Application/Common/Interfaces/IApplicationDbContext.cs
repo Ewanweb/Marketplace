@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Marketplace.Application.Common.Interfaces;
 
-public interface IIdentityDbContext
+public interface IApplicationDbContext
 {
     DbSet<User> Users { get; }
     DbSet<Role> Roles { get; }
@@ -16,6 +16,7 @@ public interface IIdentityDbContext
     DbSet<Product> Products { get; }
     DbSet<Order> Orders { get; }
     DbSet<OrderItem> OrderItems { get; }
+    DbSet<Vendor> Vendors { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

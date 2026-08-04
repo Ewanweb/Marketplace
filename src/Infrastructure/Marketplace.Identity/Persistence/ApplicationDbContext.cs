@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Marketplace.Identity.Persistence;
 
-public sealed class IdentityDbContext : DbContext, IIdentityDbContext
+public sealed class ApplicationDbContext : DbContext, IIdentityDbContext
 {
-    public IdentityDbContext(DbContextOptions<IdentityDbContext> options)
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
     {
     }
@@ -22,6 +22,7 @@ public sealed class IdentityDbContext : DbContext, IIdentityDbContext
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<Vendor> Vendors => Set<Vendor>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,6 +34,13 @@ public sealed class IdentityDbContext : DbContext, IIdentityDbContext
             builder.HasIndex(u => u.Email).IsUnique();
             builder.Property(u => u.Email).HasMaxLength(256).IsRequired();
             builder.Property(u => u.PasswordHash).IsRequired();
+        });
+
+        modelBuilder.Entity<Vendor>(builder =>
+        {
+            builder.HasKey(v => v.Id);
+            builder.Property(v => v.ShopNameEn).HasMaxLength(200).IsRequired();
+            builder.HasOne(v => v.User).WithMany().HasForeignKey(v => v.UserId);
         });
 
         modelBuilder.Entity<Role>(builder =>
@@ -81,6 +89,44 @@ public sealed class IdentityDbContext : DbContext, IIdentityDbContext
         var catClothingId = Guid.Parse("33333333-3333-3333-3333-333333333333");
         var catElectronicsId = Guid.Parse("44444444-4444-4444-4444-444444444444");
 
+        var adminUserId = Guid.Parse("55555555-5555-5555-5555-555555555555");
+        var defaultVendorId = Guid.Parse("66666666-6666-6666-6666-666666666666");
+
+        // Seed a default User and Vendor for existing products
+        modelBuilder.Entity<User>().HasData(new
+        {
+            Id = adminUserId,
+            FullName = "System Admin",
+            Email = "admin@noorzai.com",
+            PasswordHash = "dummy-hash",
+            IsEmailConfirmed = true,
+            IsTwoFactorEnabled = false,
+            IsLockoutEnabled = true,
+            AccessFailedCount = 0,
+            IsActive = true,
+            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+        });
+
+        modelBuilder.Entity<Vendor>().HasData(new
+        {
+            Id = defaultVendorId,
+            UserId = adminUserId,
+            ShopNameEn = "Noorzai Official",
+            ShopNamePrs = "فروشگاه رسمی نورزی",
+            ShopNamePs = "د نورزی رسمي پلورنځی",
+            DescriptionEn = "Official products from Noorzai.",
+            DescriptionPrs = "محصولات رسمی از طرف بازار نورزی.",
+            DescriptionPs = "د نورزی بازار رسمي محصولات.",
+            LogoUrl = "",
+            BannerUrl = "",
+            CommissionRate = 0.10m,
+            IsVerified = true,
+            Rating = 5.0,
+            IsActive = true,
+            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+        });
+
+
         modelBuilder.Entity<Category>(builder =>
         {
             builder.HasKey(c => c.Id);
@@ -102,10 +148,11 @@ public sealed class IdentityDbContext : DbContext, IIdentityDbContext
             builder.Property(p => p.TitleEn).HasMaxLength(250).IsRequired();
             builder.Property(p => p.Price).HasPrecision(18, 2);
             builder.HasOne(p => p.Category).WithMany(c => c.Products).HasForeignKey(p => p.CategoryId);
+            builder.HasOne(p => p.Vendor).WithMany(v => v.Products).HasForeignKey(p => p.VendorId).OnDelete(DeleteBehavior.Restrict);
 
             builder.HasData(
-                new { Id = Guid.Parse("a1111111-1111-1111-1111-111111111111"), TitleEn = "Herat Red Gold Premium Saffron 10g", TitlePrs = "زعفران ممتاز طلای سرخ هرات ۱۰ گرام", TitlePs = "د هرات ممتاز سور زر زعفران ۱۰ ګرامه", DescriptionEn = "100% pure organic super nagin saffron harvested from Herat fields.", DescriptionPrs = "زعفران ۱۰۰٪ طبیعی و خالص سوپر نگین برداشت شده از مزارع ولایت هرات.", DescriptionPs = "د هرات ولایت له کروندو څخه راټول شوي ۱۰۰٪ طبعي او خالص سوپر نګین زعفران.", Price = 45.00m, StockQuantity = 100, Rating = 4.9, ImageUrl = "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=500", CategoryId = catSpicesId, AvailableSizes = "5g,10g,25g", AvailableColors = "Red", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new { Id = Guid.Parse("a2222222-2222-2222-2222-222222222222"), TitleEn = "Handcrafted Wool Silk Rug (1.5x2m)", TitlePrs = "قالین دستی ابریشمی پشمی هرات (۱.۵ در ۲ متر)", TitlePs = "د پشم او ورېښمو لاسي غالۍ (۱.۵ په ۲ متره)", DescriptionEn = "Authentic hand-knotted traditional Afghan carpet with intricate patterns.", DescriptionPrs = "قالین بافته‌شده با دست با نخ‌های ابریشمی و پشم طبیعی با نقش‌های اصیل عنعنوی.", DescriptionPs = "د وریښمنو او طبعي پشم تارونو څخه په لاس اوبدل شوې د اصیلو نقشو غالۍ.", Price = 280.00m, StockQuantity = 20, Rating = 4.8, ImageUrl = "https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=500", CategoryId = catCarpetsId, AvailableSizes = "1.5x2m,2x3m", AvailableColors = "Maroon,Navy,Gold", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+                new { Id = Guid.Parse("a1111111-1111-1111-1111-111111111111"), TitleEn = "Herat Red Gold Premium Saffron 10g", TitlePrs = "زعفران ممتاز طلای سرخ هرات ۱۰ گرام", TitlePs = "د هرات ممتاز سور زر زعفران ۱۰ ګرامه", DescriptionEn = "100% pure organic super nagin saffron harvested from Herat fields.", DescriptionPrs = "زعفران ۱۰۰٪ طبیعی و خالص سوپر نگین برداشت شده از مزارع ولایت هرات.", DescriptionPs = "د هرات ولایت له کروندو څخه راټول شوي ۱۰۰٪ طبعي او خالص سوپر نګین زعفران.", Price = 45.00m, StockQuantity = 100, Rating = 4.9, ImageUrl = "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=500", CategoryId = catSpicesId, VendorId = defaultVendorId, AvailableSizes = "5g,10g,25g", AvailableColors = "Red", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = Guid.Parse("a2222222-2222-2222-2222-222222222222"), TitleEn = "Handcrafted Wool Silk Rug (1.5x2m)", TitlePrs = "قالین دستی ابریشمی پشمی هرات (۱.۵ در ۲ متر)", TitlePs = "د پشم او ورېښمو لاسي غالۍ (۱.۵ په ۲ متره)", DescriptionEn = "Authentic hand-knotted traditional Afghan carpet with intricate patterns.", DescriptionPrs = "قالین بافته‌شده با دست با نخ‌های ابریشمی و پشم طبیعی با نقش‌های اصیل عنعنوی.", DescriptionPs = "د وریښمنو او طبعي پشم تارونو څخه په لاس اوبدل شوې د اصیلو نقشو غالۍ.", Price = 280.00m, StockQuantity = 20, Rating = 4.8, ImageUrl = "https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=500", CategoryId = catCarpetsId, VendorId = defaultVendorId, AvailableSizes = "1.5x2m,2x3m", AvailableColors = "Maroon,Navy,Gold", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
             );
         });
 
@@ -122,6 +169,7 @@ public sealed class IdentityDbContext : DbContext, IIdentityDbContext
             builder.Property(i => i.UnitPrice).HasPrecision(18, 2);
             builder.HasOne(i => i.Order).WithMany(o => o.Items).HasForeignKey(i => i.OrderId);
             builder.HasOne(i => i.Product).WithMany().HasForeignKey(i => i.ProductId);
+            builder.HasOne<Vendor>().WithMany().HasForeignKey(i => i.VendorId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

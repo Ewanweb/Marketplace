@@ -27,9 +27,9 @@ public sealed class CreateOrderCommandValidator : AbstractValidator<CreateOrderC
 
 public sealed class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Result<Guid>>
 {
-    private readonly IIdentityDbContext _dbContext;
+    private readonly IApplicationDbContext _dbContext;
 
-    public CreateOrderCommandHandler(IIdentityDbContext dbContext)
+    public CreateOrderCommandHandler(IApplicationDbContext dbContext)
     {
         _dbContext = dbContext;
     }
@@ -49,6 +49,7 @@ public sealed class CreateOrderCommandHandler : IRequestHandler<CreateOrderComma
                 product.DecreaseStock(itemReq.Quantity);
                 orderItems.Add(OrderItem.Create(
                     product.Id,
+                    product.VendorId,
                     product.TitleEn,
                     product.Price,
                     itemReq.Quantity));

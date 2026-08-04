@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Marketplace.Identity.Migrations
 {
-    [DbContext(typeof(IdentityDbContext))]
+    [DbContext(typeof(ApplicationDbContext))]
     partial class IdentityDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
@@ -197,11 +197,16 @@ namespace Marketplace.Identity.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("OrderId");
 
                     b.HasIndex("ProductId");
+
+                    b.HasIndex("VendorId");
 
                     b.ToTable("OrderItems");
                 });
@@ -295,9 +300,14 @@ namespace Marketplace.Identity.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("VendorId");
 
                     b.ToTable("Products");
 
@@ -319,7 +329,8 @@ namespace Marketplace.Identity.Migrations
                             StockQuantity = 100,
                             TitleEn = "Herat Red Gold Premium Saffron 10g",
                             TitlePrs = "زعفران ممتاز طلای سرخ هرات ۱۰ گرام",
-                            TitlePs = "د هرات ممتاز سور زر زعفران ۱۰ ګرامه"
+                            TitlePs = "د هرات ممتاز سور زر زعفران ۱۰ ګرامه",
+                            VendorId = new Guid("66666666-6666-6666-6666-666666666666")
                         },
                         new
                         {
@@ -338,7 +349,8 @@ namespace Marketplace.Identity.Migrations
                             StockQuantity = 20,
                             TitleEn = "Handcrafted Wool Silk Rug (1.5x2m)",
                             TitlePrs = "قالین دستی ابریشمی پشمی هرات (۱.۵ در ۲ متر)",
-                            TitlePs = "د پشم او ورېښمو لاسي غالۍ (۱.۵ په ۲ متره)"
+                            TitlePs = "د پشم او ورېښمو لاسي غالۍ (۱.۵ په ۲ متره)",
+                            VendorId = new Guid("66666666-6666-6666-6666-666666666666")
                         });
                 });
 
@@ -451,6 +463,10 @@ namespace Marketplace.Identity.Migrations
                     b.Property<DateTime?>("EmailVerificationTokenExpiresAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -476,6 +492,9 @@ namespace Marketplace.Identity.Migrations
                     b.Property<DateTime?>("PasswordResetTokenExpiresAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("TwoFactorSecret")
                         .HasColumnType("nvarchar(max)");
 
@@ -488,6 +507,21 @@ namespace Marketplace.Identity.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("55555555-5555-5555-5555-555555555555"),
+                            AccessFailedCount = 0,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Email = "admin@noorzai.com",
+                            FullName = "System Admin",
+                            IsActive = true,
+                            IsEmailConfirmed = true,
+                            IsLockoutEnabled = true,
+                            IsTwoFactorEnabled = false,
+                            PasswordHash = "dummy-hash"
+                        });
                 });
 
             modelBuilder.Entity("Marketplace.Domain.Entities.UserRole", b =>
@@ -505,6 +539,90 @@ namespace Marketplace.Identity.Migrations
                     b.ToTable("UserRoles");
                 });
 
+            modelBuilder.Entity("Marketplace.Domain.Entities.Vendor", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BannerUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("CommissionRate")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DescriptionEn")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DescriptionPrs")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DescriptionPs")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsVerified")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LogoUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("Rating")
+                        .HasColumnType("float");
+
+                    b.Property<string>("ShopNameEn")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ShopNamePrs")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ShopNamePs")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Vendors");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("66666666-6666-6666-6666-666666666666"),
+                            BannerUrl = "",
+                            CommissionRate = 0.10m,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DescriptionEn = "Official products from Noorzai.",
+                            DescriptionPrs = "محصولات رسمی از طرف بازار نورزی.",
+                            DescriptionPs = "د نورزی بازار رسمي محصولات.",
+                            IsActive = true,
+                            IsVerified = true,
+                            LogoUrl = "",
+                            Rating = 5.0,
+                            ShopNameEn = "Noorzai Official",
+                            ShopNamePrs = "فروشگاه رسمی نورزی",
+                            ShopNamePs = "د نورزی رسمي پلورنځی",
+                            UserId = new Guid("55555555-5555-5555-5555-555555555555")
+                        });
+                });
+
             modelBuilder.Entity("Marketplace.Domain.Entities.OrderItem", b =>
                 {
                     b.HasOne("Marketplace.Domain.Entities.Order", "Order")
@@ -517,6 +635,12 @@ namespace Marketplace.Identity.Migrations
                         .WithMany()
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Marketplace.Domain.Entities.Vendor", null)
+                        .WithMany()
+                        .HasForeignKey("VendorId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Order");
@@ -532,7 +656,15 @@ namespace Marketplace.Identity.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Marketplace.Domain.Entities.Vendor", "Vendor")
+                        .WithMany("Products")
+                        .HasForeignKey("VendorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Category");
+
+                    b.Navigation("Vendor");
                 });
 
             modelBuilder.Entity("Marketplace.Domain.Entities.RefreshToken", b =>
@@ -584,6 +716,17 @@ namespace Marketplace.Identity.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Marketplace.Domain.Entities.Vendor", b =>
+                {
+                    b.HasOne("Marketplace.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Marketplace.Domain.Entities.Category", b =>
                 {
                     b.Navigation("Products");
@@ -611,6 +754,11 @@ namespace Marketplace.Identity.Migrations
                     b.Navigation("RefreshTokens");
 
                     b.Navigation("UserRoles");
+                });
+
+            modelBuilder.Entity("Marketplace.Domain.Entities.Vendor", b =>
+                {
+                    b.Navigation("Products");
                 });
 #pragma warning restore 612, 618
         }

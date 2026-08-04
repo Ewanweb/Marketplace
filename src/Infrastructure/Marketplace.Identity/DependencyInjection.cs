@@ -15,10 +15,10 @@ public static class DependencyInjection
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
-        services.AddDbContext<IdentityDbContext>(options =>
+        services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(connectionString));
 
-        services.AddScoped<IIdentityDbContext, IdentityDbContext>();
+        services.AddScoped<IApplicationDbContext, ApplicationDbContext>();
 
         var redisConnection = configuration.GetConnectionString("Redis") ?? "localhost:6379";
         services.AddStackExchangeRedisCache(options =>
