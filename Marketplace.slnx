@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Core/">
+    <Project Path="src/Core/Marketplace.Application/Marketplace.Application.csproj" />
+    <Project Path="src/Core/Marketplace.Domain/Marketplace.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Infrastructure/">
+    <Project Path="src/Infrastructure/Marketplace.Identity/Marketplace.Identity.csproj" />
+    <Project Path="src/Infrastructure/Marketplace.Infrastructure/Marketplace.Infrastructure.csproj" />
+    <Project Path="src/Infrastructure/Marketplace.Scraping/Marketplace.Scraping.csproj" />
+  </Folder>
+  <Folder Name="/src/Presentation/">
+    <Project Path="src/Presentation/Marketplace.API/Marketplace.API.csproj" />
+  </Folder>
+  <Folder Name="/src/SharedKernel/">
+    <Project Path="src/SharedKernel/Marketplace.Shared/Marketplace.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Marketplace.IntegrationTests/Marketplace.IntegrationTests.csproj" />
+    <Project Path="tests/Marketplace.UnitTests/Marketplace.UnitTests.csproj" />
+  </Folder>
+</Solution>
