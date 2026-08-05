@@ -4,6 +4,8 @@ class Category {
   final String namePrs;
   final String namePs;
   final String iconName;
+  final String? parentId;
+  final int level;
 
   const Category({
     required this.id,
@@ -11,6 +13,8 @@ class Category {
     required this.namePrs,
     required this.namePs,
     required this.iconName,
+    this.parentId,
+    this.level = 1,
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
@@ -20,12 +24,14 @@ class Category {
       namePrs: json['namePrs'] ?? json['nameEn'] ?? '',
       namePs: json['namePs'] ?? json['nameEn'] ?? '',
       iconName: json['iconName'] ?? 'category',
+      parentId: json['parentId']?.toString(),
+      level: (json['level'] as num?)?.toInt() ?? 1,
     );
   }
 
   String getName(String langCode) {
-    if (langCode == 'ps') return namePs;
-    if (langCode == 'prs' || langCode == 'fa') return namePrs;
+    if (langCode == 'ps') return namePs.isNotEmpty ? namePs : nameEn;
+    if (langCode == 'prs' || langCode == 'fa') return namePrs.isNotEmpty ? namePrs : nameEn;
     return nameEn;
   }
 }
