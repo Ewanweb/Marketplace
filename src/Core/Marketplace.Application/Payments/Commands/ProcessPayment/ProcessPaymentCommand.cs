@@ -54,7 +54,14 @@ public sealed class ProcessPaymentCommandHandler : IRequestHandler<ProcessPaymen
         payment.MarkAsSuccessful();
         order.UpdateStatus(OrderStatus.Processing);
 
+        var notification = Notification.Create(
+            request.UserId,
+            "Payment Confirmed",
+            $"Your payment of ${order.TotalAmount:F2} for Order #{order.OrderNumber} was processed successfully.",
+            NotificationType.PaymentSuccess);
+
         _dbContext.Payments.Add(payment);
+        _dbContext.Notifications.Add(notification);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return Result.Success(payment.Id);

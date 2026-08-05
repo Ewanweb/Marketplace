@@ -19,6 +19,8 @@ public interface IApplicationDbContext
     DbSet<Vendor> Vendors { get; }
     DbSet<Payment> Payments { get; }
     DbSet<Review> Reviews { get; }
+    DbSet<Notification> Notifications { get; }
+    DbSet<Coupon> Coupons { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

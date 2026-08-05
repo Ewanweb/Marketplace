@@ -26,7 +26,8 @@ try
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext()
-        .WriteTo.Console());
+        .WriteTo.Console()
+        .WriteTo.Seq(context.Configuration["Seq:ServerUrl"] ?? "http://marketplace.seq:80"));
 
     // Register Services
     builder.Services.AddOpenApi(options =>
@@ -41,10 +42,11 @@ try
         });
     });
     builder.Services.AddControllers();
+    builder.Services.AddSignalR();
     builder.Services.AddHttpContextAccessor();
 
     builder.Services.AddCors(options =>
-    {
+    { 
         options.AddPolicy("AllowAll", policy =>
         {
             policy.AllowAnyOrigin()
@@ -144,6 +146,7 @@ try
     app.UseAuthorization();
 
     app.MapControllers();
+    app.MapHub<Marketplace.API.Hubs.NotificationHub>("/hubs/notifications");
 
     app.Run();
 }

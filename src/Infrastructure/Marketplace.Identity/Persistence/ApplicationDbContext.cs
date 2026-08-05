@@ -25,6 +25,8 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Vendor> Vendors => Set<Vendor>();
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Coupon> Coupons => Set<Coupon>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -56,6 +58,21 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
             builder.HasOne(p => p.User).WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<Coupon>(builder =>
+        {
+            builder.HasKey(c => c.Id);
+            builder.HasIndex(c => c.Code).IsUnique();
+            builder.Property(c => c.Code).HasMaxLength(50).IsRequired();
+            builder.Property(c => c.DiscountPercent).HasPrecision(18, 2);
+            builder.Property(c => c.DiscountAmount).HasPrecision(18, 2);
+            builder.Property(c => c.MinOrderAmount).HasPrecision(18, 2);
+            builder.Property(c => c.MaxDiscountAmount).HasPrecision(18, 2);
+
+            builder.HasData(
+                new { Id = Guid.Parse("77777777-7777-7777-7777-777777777777"), Code = "NOORZAI20", DiscountPercent = 20.00m, DiscountAmount = 0m, IsPercentage = true, MinOrderAmount = 10.00m, MaxDiscountAmount = 200.00m, ExpiryDate = new DateTime(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc), UsageLimit = 5000, UsedCount = 0, IsActive = true, VendorId = (Guid?)null, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = Guid.Parse("88888888-8888-8888-8888-888888888888"), Code = "WELCOME10", DiscountPercent = 0m, DiscountAmount = 10.00m, IsPercentage = false, MinOrderAmount = 20.00m, MaxDiscountAmount = 10.00m, ExpiryDate = new DateTime(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc), UsageLimit = 5000, UsedCount = 0, IsActive = true, VendorId = (Guid?)null, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+            );
+        });
         modelBuilder.Entity<Role>(builder =>
         {
             builder.HasKey(r => r.Id);

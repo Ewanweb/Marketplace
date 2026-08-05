@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.Claims;
 using System.Text.Json;
 using Marketplace.Shared.Results;
 
@@ -20,10 +21,30 @@ public sealed class GlobalExceptionHandlerMiddleware
         try
         {
             await _next(context);
+
+            // Log warnings for 4xx responses (Bad Request, Unauthorized, Not Found, etc.)
+            if (context.Response.StatusCode >= 400 && context.Response.StatusCode < 500)
+            {
+                var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Anonymous";
+                _logger.LogWarning(
+                    "HTTP {Method} {Path} responded with Status Code {StatusCode} for User {UserId}",
+                    context.Request.Method,
+                    context.Request.Path,
+                    context.Response.StatusCode,
+                    userId);
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception caught by middleware: {Message}", ex.Message);
+            var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Anonymous";
+            _logger.LogError(
+                ex,
+                "Unhandled exception caught on HTTP {Method} {Path} for User {UserId}: {Message}",
+                context.Request.Method,
+                context.Request.Path,
+                userId,
+                ex.Message);
+
             await HandleExceptionAsync(context, ex);
         }
     }
