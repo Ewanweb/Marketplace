@@ -54,10 +54,18 @@ final productsProvider = FutureProvider<List<Product>>((ref) async {
     token: authState.token,
   );
 
-  if (response != null && response['isSuccess'] == true) {
-    final List<dynamic> data = response['value'] ?? [];
-    return data.map((json) => Product.fromJson(json)).toList();
+  if (response == null) {
+    throw Exception('Network error while loading products.');
   }
 
-  return [];
+  if (response['isSuccess'] == true) {
+    final List<dynamic> data = response['value'] ?? [];
+    return data.map((json) => Product.fromJson(json)).toList();
+  } else {
+    final errorCode = response['error']?['code'];
+    if (errorCode == 'Auth.Unauthorized' || errorCode == 'Auth.InvalidCredentials') {
+      throw Exception('Session expired. Please login again.');
+    }
+    throw Exception(response['error']?['message'] ?? 'Failed to load products');
+  }
 });

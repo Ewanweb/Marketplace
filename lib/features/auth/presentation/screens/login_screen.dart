@@ -18,8 +18,8 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _emailController = TextEditingController(text: 'admin@marketplace.com');
-  final _passwordController = TextEditingController(text: 'Admin@123456');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
@@ -36,7 +36,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
 
     if (success && mounted) {
-      context.go('/');
+      final role = ref.read(authProvider).role;
+      if (role == 'SuperAdmin' || role == 'Admin') {
+        context.go('/admin');
+      } else {
+        context.go('/');
+      }
     }
   }
 
@@ -88,7 +93,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      b10n.translate('LogOut', 'Sign In'),
+                      b10n.translate('SignIn', 'Sign In'),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 18,

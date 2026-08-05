@@ -8,8 +8,6 @@ import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/catalog/presentation/screens/main_navigation_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
-
   return GoRouter(
     initialLocation: '/',
     routes: [
@@ -20,15 +18,36 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+        redirect: (context, state) {
+          final authState = ref.read(authProvider);
+          if (authState.isAuthenticated) {
+            if (authState.role == 'SuperAdmin' || authState.role == 'Admin') {
+              return '/admin';
+            }
+            return '/';
+          }
+          return null;
+        },
       ),
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
+        redirect: (context, state) {
+          final authState = ref.read(authProvider);
+          if (authState.isAuthenticated) {
+            if (authState.role == 'SuperAdmin' || authState.role == 'Admin') {
+              return '/admin';
+            }
+            return '/';
+          }
+          return null;
+        },
       ),
       GoRoute(
         path: '/admin',
         builder: (context, state) => const AdminLayout(),
         redirect: (context, state) {
+          final authState = ref.read(authProvider);
           if (!authState.isAuthenticated) {
             return '/login';
           }

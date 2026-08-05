@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/localization/locale_provider.dart';
 import '../../../../core/network/api_client.dart';
-import '../../../../shared/widgets/custom_card.dart';
-import '../../agency/presentation/screens/agency_application_screen.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../auth/presentation/auth_provider.dart';
-import '../../auth/presentation/screens/profile_screen.dart';
 
 final financialReportProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
   final apiClient = ref.watch(apiClientProvider);
@@ -37,151 +34,244 @@ class AdminDashboardScreen extends ConsumerWidget {
     final financialReportAsync = ref.watch(financialReportProvider);
 
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              langCode == 'ps' ? 'د پلور عمومي لید' : (langCode == 'prs' || langCode == 'fa' ? 'داشبورد آنالیز و گزارشات مالی' : 'Executive Financial Analytics'),
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            Wrap(
-              spacing: 8,
-              children: [
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.person_outline, size: 16),
-                  label: Text(langCode == 'ps' ? 'پروفایل' : (langCode == 'prs' || langCode == 'fa' ? 'ویرایش پروفایل' : 'Profile')),
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
-                  },
-                ),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.verified_user_outlined, size: 16),
-                  label: Text(langCode == 'ps' ? 'نمایندګي' : (langCode == 'prs' || langCode == 'fa' ? 'درخواست نمایندگی' : 'Agency')),
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AgencyApplicationScreen()));
-                  },
-                ),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.store, size: 16),
-                  label: Text(langCode == 'ps' ? 'اصلي پاڼه' : (langCode == 'prs' || langCode == 'fa' ? 'صفحه اصلی فروشگاه' : 'Home Page')),
-                  onPressed: () => context.go('/'),
-                ),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-
+        // Financial Metrics Grid
         financialReportAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, _) => Text('Error loading financial analytics: $err'),
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(48.0),
+              child: CircularProgressIndicator(),
+            ),
+          ),
+          error: (err, _) => Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.horizonRed.withAlpha(20),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text('Error loading analytics: $err', style: const TextStyle(color: AppColors.horizonRed)),
+          ),
           data: (report) {
             final grossSales = report?['totalGrossSales'] ?? 14250.0;
             final commission = report?['platformCommissionRevenue'] ?? 1425.0;
             final vendorPayout = report?['vendorPayoutTotal'] ?? 12825.0;
             final avgOrder = report?['averageOrderValue'] ?? 375.0;
 
+            final isWide = MediaQuery.of(context).size.width > 900;
+
             return GridView.count(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: MediaQuery.of(context).size.width > 900 ? 4 : 2,
+              crossAxisCount: isWide ? 4 : 2,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              childAspectRatio: 1.4,
+              childAspectRatio: isWide ? 1.7 : 1.3,
               children: [
-                _buildMetricCard(
-                  title: langCode == 'ps' ? 'ټول عاید' : (langCode == 'prs' || langCode == 'fa' ? 'مجموع فروش کل (Gross)' : 'Total Gross Sales'),
+                _buildHorizonStatCard(
+                  title: langCode == 'ps' ? 'ټول عاید' : (langCode == 'prs' || langCode == 'fa' ? 'مجموع فروش کل' : 'Total Gross Sales'),
                   value: '\$${(grossSales as num).toStringAsFixed(2)}',
-                  icon: Icons.attach_money,
-                  color: Colors.greenAccent,
+                  growth: '+23%',
+                  icon: Icons.bar_chart_rounded,
+                  iconBgColor: AppColors.horizonBrand.withAlpha(20),
+                  iconColor: AppColors.horizonBrand,
                 ),
-                _buildMetricCard(
-                  title: langCode == 'ps' ? 'د کمیسیون عاید' : (langCode == 'prs' || langCode == 'fa' ? 'درآمد کمیسیون پلتفرم' : 'Platform Commission'),
+                _buildHorizonStatCard(
+                  title: langCode == 'ps' ? 'د کمیسیون عاید' : (langCode == 'prs' || langCode == 'fa' ? 'درآمد کمیسیون' : 'Commission Revenue'),
                   value: '\$${(commission as num).toStringAsFixed(2)}',
-                  icon: Icons.account_balance_wallet,
-                  color: const Color(0xFFA29BFE),
+                  growth: '+12.5%',
+                  icon: Icons.account_balance_wallet_rounded,
+                  iconBgColor: AppColors.horizonSky.withAlpha(30),
+                  iconColor: const Color(0xFF0095FF),
                 ),
-                _buildMetricCard(
-                  title: langCode == 'ps' ? 'فروشندګانو ته ورکړه' : (langCode == 'prs' || langCode == 'fa' ? 'سهم خالص غرفه‌داران' : 'Vendor Payouts'),
+                _buildHorizonStatCard(
+                  title: langCode == 'ps' ? 'فروشندګانو ته ورکړه' : (langCode == 'prs' || langCode == 'fa' ? 'سهم غرفه‌داران' : 'Vendor Payouts'),
                   value: '\$${(vendorPayout as num).toStringAsFixed(2)}',
-                  icon: Icons.store,
-                  color: Colors.orangeAccent,
+                  growth: '+18%',
+                  icon: Icons.storefront_rounded,
+                  iconBgColor: AppColors.horizonOrange.withAlpha(30),
+                  iconColor: AppColors.horizonOrange,
                 ),
-                _buildMetricCard(
+                _buildHorizonStatCard(
                   title: langCode == 'ps' ? 'منځنی فاکتور' : (langCode == 'prs' || langCode == 'fa' ? 'میانگین هر سفارش' : 'Avg Order Value'),
                   value: '\$${(avgOrder as num).toStringAsFixed(2)}',
-                  icon: Icons.analytics_outlined,
-                  color: Colors.lightBlueAccent,
+                  growth: '+5.2%',
+                  icon: Icons.show_chart_rounded,
+                  iconBgColor: AppColors.horizonGreen.withAlpha(30),
+                  iconColor: AppColors.horizonGreen,
                 ),
               ],
             );
           },
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 24),
 
-        CustomCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                langCode == 'ps' ? 'د میاشتني هدف پرمختګ' : (langCode == 'prs' || langCode == 'fa' ? 'پیشرفت هدف ماهانه بازار' : 'Monthly Goal Progress'),
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 16),
-              LinearProgressIndicator(
-                value: 0.85,
-                minHeight: 12,
-                borderRadius: BorderRadius.circular(8),
-                backgroundColor: Colors.white10,
-                color: const Color(0xFF6C5CE7),
-              ),
-              const SizedBox(height: 12),
-              const Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '85% Reached',
-                  style: TextStyle(color: Color(0xFFA29BFE), fontWeight: FontWeight.bold, fontSize: 12),
+        // Middle Section: Goal Progress & Performance Banner
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.horizonCard,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: const [AppColors.horizonShadow],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.horizonBrand.withAlpha(15),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(Icons.track_changes_rounded, color: AppColors.horizonBrand, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              langCode == 'ps' ? 'د میاشتني هدف پرمختګ' : (langCode == 'prs' || langCode == 'fa' ? 'پیشرفت هدف فروش ماهانه' : 'Monthly Sales Goal Target'),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.horizonNavy,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.horizonGreen.withAlpha(20),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'On Track',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.horizonGreen,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: const LinearProgressIndicator(
+                        value: 0.85,
+                        minHeight: 12,
+                        backgroundColor: Color(0xFFF4F7FE),
+                        color: AppColors.horizonBrand,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          langCode == 'ps' ? '۸۵٪ رسیدلی' : (langCode == 'prs' || langCode == 'fa' ? '۸۵٪ محقق شده' : '85% Achieved'),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.horizonNavy,
+                          ),
+                        ),
+                        Text(
+                          langCode == 'ps' ? 'هدف: \$۱۸,۰۰۰' : (langCode == 'prs' || langCode == 'fa' ? 'هدف: \$۱۸,۰۰۰' : 'Target: \$18,000'),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.horizonMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildMetricCard({
+  // Horizon Mini-Stat Card Component
+  Widget _buildHorizonStatCard({
     required String title,
     required String value,
+    required String growth,
     required IconData icon,
-    required Color color,
+    required Color iconBgColor,
+    required Color iconColor,
   }) {
-    return CustomCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.horizonCard,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [AppColors.horizonShadow],
+      ),
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Icon(icon, color: color, size: 28),
-            ],
+          // Circular Badge Icon on Left
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: iconBgColor,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: iconColor, size: 24),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                title,
-                style: const TextStyle(fontSize: 12, color: Colors.white70),
-              ),
-            ],
+          const SizedBox(width: 16),
+
+          // Values & Growth Pill
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.horizonMuted,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.horizonNavy,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      growth,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.horizonGreen,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),

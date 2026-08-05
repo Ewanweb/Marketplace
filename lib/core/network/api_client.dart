@@ -95,7 +95,7 @@ class ApiClient {
     String? token,
   }) async {
     try {
-      final fullEndpoint = endpoint.startsWith('/auth') ? endpoint : (endpoint.startsWith('/') ? endpoint : '/$endpoint');
+      final fullEndpoint = endpoint.startsWith('/') ? endpoint : '/$endpoint';
       final url = Uri.parse('$baseApiUrl$fullEndpoint');
       final response = await _client.post(
         url,
@@ -159,11 +159,29 @@ class ApiClient {
   }
 
   dynamic _processResponse(http.Response response) {
+    if (response.statusCode == 401) {
+      return {
+        'isSuccess': false,
+        'error': {'code': 'Auth.Unauthorized', 'message': 'نشست شما منقضی شده است (401 Unauthorized). لطفاً مجدداً وارد حساب کاربری شوید.'}
+      };
+    }
+    if (response.statusCode == 403) {
+      return {
+        'isSuccess': false,
+        'error': {'code': 'Auth.Forbidden', 'message': 'شما دسترسی لازم برای انجام این عملیات را ندارید (403 Forbidden).'}
+      };
+    }
     try {
+      if (response.body.isEmpty) {
+        return {'isSuccess': response.statusCode >= 200 && response.statusCode < 300};
+      }
       final body = jsonDecode(response.body);
       return body;
     } catch (_) {
-      return {'isSuccess': false, 'error': {'message': 'Invalid response format.'}};
+      return {
+        'isSuccess': false,
+        'error': {'message': 'پاسخ نامعتبر سرور (کد ${response.statusCode})'}
+      };
     }
   }
 }

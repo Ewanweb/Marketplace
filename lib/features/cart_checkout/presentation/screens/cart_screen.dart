@@ -1,3 +1,4 @@
+import 'dart:math' show max;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/localization/locale_provider.dart';
@@ -267,7 +268,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     final langCode = locale.languageCode;
 
     final rawTotal = cartNotifier.totalAmount;
-    final finalTotal = Math.max(0.0, rawTotal - _appliedDiscountAmount);
+    final finalTotal = max(0.0, rawTotal - _appliedDiscountAmount);
 
     if (cartItems.isEmpty) {
       return Center(
@@ -336,6 +337,12 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                             } else {
                               cartNotifier.removeFromCart(item);
                             }
+                            if (_appliedDiscountAmount > 0) {
+                              setState(() {
+                                _appliedDiscountAmount = 0.0;
+                                _appliedCouponCode = null;
+                              });
+                            }
                           },
                         ),
                         Text(
@@ -346,6 +353,12 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                           icon: const Icon(Icons.add_circle_outline, color: Colors.white70),
                           onPressed: () {
                             cartNotifier.updateQuantity(item, 1);
+                            if (_appliedDiscountAmount > 0) {
+                              setState(() {
+                                _appliedDiscountAmount = 0.0;
+                                _appliedCouponCode = null;
+                              });
+                            }
                           },
                         ),
                       ],
@@ -452,6 +465,3 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   }
 }
 
-class Math {
-  static double max(double a, double b) => a > b ? a : b;
-}

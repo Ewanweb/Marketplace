@@ -77,12 +77,12 @@ class Product {
       imageUrl: json['imageUrl'] ?? 'https://via.placeholder.com/150',
       categoryId: json['categoryId']?.toString() ?? '',
       vendorId: json['vendorId']?.toString() ?? '',
-      availableSizes: json['availableSizes'] != null 
-          ? json['availableSizes'].toString().split(',').map((e) => e.trim()).toList() 
-          : ['M', 'L'],
-      availableColors: json['availableColors'] != null 
-          ? json['availableColors'].toString().split(',').map((e) => e.trim()).toList() 
-          : ['Default'],
+      availableSizes: json['availableSizes'] is List 
+          ? List<String>.from(json['availableSizes'])
+          : (json['availableSizes']?.toString().split(',').map((e) => e.trim()).toList() ?? ['M', 'L']),
+      availableColors: json['availableColors'] is List 
+          ? List<String>.from(json['availableColors'])
+          : (json['availableColors']?.toString().split(',').map((e) => e.trim()).toList() ?? ['Default']),
     );
   }
 

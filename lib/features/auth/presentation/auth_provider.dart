@@ -24,7 +24,7 @@ class AuthState {
     this.errorMessage,
   });
 
-  bool get isAdmin => role?.toLowerCase() == 'admin';
+  bool get isAdmin => role?.toLowerCase() == 'superadmin' || role?.toLowerCase() == 'admin';
   bool get isVendor => vendorId != null && vendorId!.isNotEmpty;
 
   AuthState copyWith({
@@ -122,7 +122,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final locale = _ref.read(localeProvider);
 
       final response = await apiClient.post(
-        '/login',
+        '/auth/login',
         {'email': email, 'password': password},
         languageCode: locale.languageCode,
       );
@@ -167,7 +167,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final locale = _ref.read(localeProvider);
 
       final response = await apiClient.post(
-        '/register',
+        '/auth/register',
         {
           'fullName': fullName,
           'email': email,
