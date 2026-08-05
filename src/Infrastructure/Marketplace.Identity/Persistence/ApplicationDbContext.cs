@@ -164,11 +164,39 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
             builder.Property(c => c.NamePrs).HasMaxLength(150).IsRequired();
             builder.Property(c => c.NamePs).HasMaxLength(150).IsRequired();
 
+            builder.HasOne(c => c.Parent)
+                   .WithMany(c => c.SubCategories)
+                   .HasForeignKey(c => c.ParentId)
+                   .OnDelete(DeleteBehavior.Restrict);
+
+            // Seed 3-Layer Category Tree
+            var catAgriId = Guid.Parse("10000000-0000-0000-0000-000000000001");
+            var catHandicraftsId = Guid.Parse("10000000-0000-0000-0000-000000000002");
+            var catApparelId = Guid.Parse("10000000-0000-0000-0000-000000000003");
+
+            var catSaffronGroup = Guid.Parse("20000000-0000-0000-0000-000000000001");
+            var catNutsGroup = Guid.Parse("20000000-0000-0000-0000-000000000002");
+            var catCarpetsGroup = Guid.Parse("20000000-0000-0000-0000-000000000003");
+
+            var catSuperSargol = Guid.Parse("11111111-1111-1111-1111-111111111111");
+            var catPushalSaffron = Guid.Parse("11111111-1111-1111-1111-222222222222");
+            var catSilkCarpet = Guid.Parse("22222222-2222-2222-2222-222222222222");
+
             builder.HasData(
-                new { Id = catSpicesId, NameEn = "Dry Fruits & Saffron", NamePrs = "میوه خشک و زعفران ممتاز", NamePs = "وچه میوه او ممتاز زعفران", IconName = "local_florist", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new { Id = catCarpetsId, NameEn = "Handmade Afghan Carpets", NamePrs = "قالین‌های دستی افغانی", NamePs = "د افغانستان لاسي غالۍ", IconName = "square_foot", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new { Id = catClothingId, NameEn = "Traditional Apparel", NamePrs = "پوشاک عنعنوی و مدرن", NamePs = "عنعنوي او عصري جامې", IconName = "checkroom", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new { Id = catElectronicsId, NameEn = "Electronics & Gadgets", NamePrs = "لوازم الکترونیکی و دیجیتال", NamePs = "الکټرونیکي او ډیجیټل توکي", IconName = "devices", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+                // Level 1: Main Categories
+                new { Id = catAgriId, NameEn = "Agricultural & Dried Fruits", NamePrs = "محصولات کشاورزی و خشکبار", NamePs = "کرنیز او وچه میوه جات", IconName = "eco", ParentId = (Guid?)null, Level = 1, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = catHandicraftsId, NameEn = "Handicrafts & Rugs", NamePrs = "صنایع دستی و فرش", NamePs = "لاسي صنایع او غالۍ", IconName = "style", ParentId = (Guid?)null, Level = 1, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = catApparelId, NameEn = "Apparel & Textiles", NamePrs = "پوشاک و منسوجات", NamePs = "کالي او ټوکران", IconName = "checkroom", ParentId = (Guid?)null, Level = 1, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+
+                // Level 2: Sub Categories
+                new { Id = catSaffronGroup, NameEn = "Saffron & Spices", NamePrs = "زعفران و ادویه‌جات اعلا", NamePs = "زعفران او اعلی مصالحې", IconName = "local_florist", ParentId = (Guid?)catAgriId, Level = 2, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = catNutsGroup, NameEn = "Nuts & Almonds", NamePrs = "خشکبار، پسته و بادام", NamePs = "وچه میوه، پسته او بادام", IconName = "grain", ParentId = (Guid?)catAgriId, Level = 2, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = catCarpetsGroup, NameEn = "Handwoven Carpets", NamePrs = "قالین‌های دستبافت افغانی", NamePs = "د افغانستان لاسي غالۍ", IconName = "square_foot", ParentId = (Guid?)catHandicraftsId, Level = 2, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+
+                // Level 3: Leaf Categories
+                new { Id = catSuperSargol, NameEn = "Super Sargol Saffron", NamePrs = "زعفران ممتاز سرگل هرات", NamePs = "د هرات ممتاز سرګل زعفران", IconName = "star", ParentId = (Guid?)catSaffronGroup, Level = 3, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = catPushalSaffron, NameEn = "Export Pushal Saffron", NamePrs = "زعفران پوشال صادراتی", NamePs = "صادراتي پوښال زعفران", IconName = "verified", ParentId = (Guid?)catSaffronGroup, Level = 3, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = catSilkCarpet, NameEn = "Herat Silk Rugs", NamePrs = "قالیچه ابریشمی ممتاز هرات", NamePs = "د هرات ممتاز ورېښمینې غالۍ", IconName = "grade", ParentId = (Guid?)catCarpetsGroup, Level = 3, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
             );
         });
 

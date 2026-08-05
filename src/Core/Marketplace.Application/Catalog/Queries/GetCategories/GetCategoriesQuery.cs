@@ -9,7 +9,12 @@ namespace Marketplace.Application.Catalog.Queries.GetCategories;
 public sealed record CategoryDto(
     Guid Id,
     string Name,
-    string IconName);
+    string NameEn,
+    string NamePrs,
+    string NamePs,
+    string IconName,
+    Guid? ParentId,
+    int Level);
 
 public sealed record GetCategoriesQuery() : IRequest<Result<List<CategoryDto>>>;
 
@@ -32,7 +37,12 @@ public sealed class GetCategoriesQueryHandler : IRequestHandler<GetCategoriesQue
             .Select(c => new CategoryDto(
                 c.Id,
                 c.GetName(culture),
-                c.IconName))
+                c.NameEn,
+                c.NamePrs,
+                c.NamePs,
+                c.IconName,
+                c.ParentId,
+                c.Level))
             .ToListAsync(cancellationToken);
 
         return Result.Success(categories);

@@ -7,9 +7,13 @@ public class Category
     public string NamePrs { get; private set; } = string.Empty;
     public string NamePs { get; private set; } = string.Empty;
     public string IconName { get; private set; } = string.Empty;
+    public Guid? ParentId { get; private set; }
+    public int Level { get; private set; } = 1;
     public bool IsActive { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
+    public Category? Parent { get; private set; }
+    public ICollection<Category> SubCategories { get; private set; } = new List<Category>();
     public ICollection<Product> Products { get; private set; } = new List<Product>();
 
     private Category() { } // For EF Core
@@ -18,7 +22,9 @@ public class Category
         string nameEn,
         string namePrs,
         string namePs,
-        string iconName)
+        string iconName,
+        Guid? parentId = null,
+        int level = 1)
     {
         return new Category
         {
@@ -27,6 +33,8 @@ public class Category
             NamePrs = namePrs.Trim(),
             NamePs = namePs.Trim(),
             IconName = iconName.Trim(),
+            ParentId = parentId,
+            Level = level,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
