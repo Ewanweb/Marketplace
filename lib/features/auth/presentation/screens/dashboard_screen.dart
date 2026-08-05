@@ -42,6 +42,138 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String _selectedOrderFilter = 'all';
 
+  void _showInvoiceDialog(BuildContext context, String orderId, String langCode) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Consumer(
+          builder: (context, ref, _) {
+            final apiClient = ref.watch(apiClientProvider);
+            final token = ref.watch(authProvider).token;
+
+            return FutureBuilder<dynamic>(
+              future: apiClient.get('/reports/invoice/$orderId', languageCode: langCode, token: token),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const AlertDialog(
+                    content: SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
+                  );
+                }
+
+                final response = snapshot.data;
+                if (response == null || response['isSuccess'] != true || response['value'] == null) {
+                  return AlertDialog(
+                    title: const Text('Invoice Error'),
+                    content: const Text('Unable to load official invoice.'),
+                    actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))],
+                  );
+                }
+
+                final inv = response['value'];
+                final items = (inv['items'] as List<dynamic>?) ?? [];
+
+                return AlertDialog(
+                  backgroundColor: const Color(0xFF1E1E2E),
+                  title: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.receipt_long, color: AppColors.royalBlue),
+                          const SizedBox(width: 8),
+                          Text(
+                            langCode == 'ps' ? 'رسمي فاکتور' : (langCode == 'prs' || langCode == 'fa' ? 'فاکتور رسمی خرید' : 'Official Tax Invoice'),
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                        ],
+                      ),
+                      Text('#${inv['orderNumber']}', style: const TextStyle(fontSize: 14, color: Colors.white70)),
+                    ],
+                  ),
+                  content: SizedBox(
+                    width: 500,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Divider(color: Colors.white24),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Customer: ${inv['customerName']}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                                  Text('Address: ${inv['shippingAddress']}', style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text('Payment: ${inv['paymentMethod']}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+                                  Text('Status: ${inv['status']}', style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          const Text('Itemized Bill:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white70)),
+                          const SizedBox(height: 8),
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: items.length,
+                            itemBuilder: (context, idx) {
+                              final item = items[idx];
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('${item['productTitle']} x${item['quantity']}', style: const TextStyle(color: Colors.white)),
+                                    Text('\$${(item['totalPrice'] as num).toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70)),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                          const Divider(color: Colors.white24, height: 24),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Total Paid Amount:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                              Text('\$${(inv['totalAmount'] as num).toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Color(0xFFA29BFE))),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  actions: [
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.royalBlue),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invoice sent to print queue!')));
+                      },
+                      icon: const Icon(Icons.print, size: 16),
+                      label: Text(langCode == 'ps' ? 'چاپ کړه' : (langCode == 'prs' || langCode == 'fa' ? 'چاپ فاکتور' : 'Print Invoice')),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(langCode == 'ps' ? 'تړل' : (langCode == 'prs' || langCode == 'fa' ? 'بستن' : 'Close')),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
@@ -49,7 +181,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final locale = ref.watch(localeProvider);
     final langCode = locale.languageCode;
 
-    // Guard: Unauthenticated state
     if (!authState.isAuthenticated) {
       return Center(
         child: SingleChildScrollView(
@@ -141,7 +272,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Top Action Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -190,7 +320,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Hero Glassmorphism Profile Banner
+              // Hero Glassmorphism Banner
               Container(
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
@@ -268,7 +398,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.edit, color: Colors.white70),
-                              tooltip: 'Edit Profile',
                               onPressed: () {
                                 Navigator.push(
                                   context,
@@ -278,7 +407,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ),
                             IconButton(
                               icon: const Icon(Icons.power_settings_new, color: Colors.redAccent),
-                              tooltip: 'Log Out',
                               onPressed: () async {
                                 await ref.read(authProvider.notifier).logout();
                                 if (context.mounted) {
@@ -294,7 +422,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     const Divider(color: Colors.white24, height: 1),
                     const SizedBox(height: 20),
 
-                    // Embedded Metrics Banner
                     myOrdersAsync.when(
                       loading: () => const SizedBox(),
                       error: (_, __) => const SizedBox(),
@@ -328,7 +455,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               const SizedBox(height: 28),
 
-              // Interactive Quick Action Hub
+              // Service Hub
               Text(
                 langCode == 'ps' ? 'چټکې کړنې او خدمات' : (langCode == 'prs' || langCode == 'fa' ? 'میز خدمات و دسترسی سریع' : 'Service Hub & Quick Actions'),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -380,7 +507,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               const SizedBox(height: 32),
 
-              // Order History Section with Filter Tabs
+              // Order History Section
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -434,6 +561,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     itemBuilder: (context, index) {
                       final order = orders[index];
                       final items = (order['items'] as List<dynamic>?) ?? [];
+                      final orderId = order['id']?.toString() ?? '';
+
                       return CustomCard(
                         padding: const EdgeInsets.all(20),
                         child: Column(
@@ -468,17 +597,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     ),
                                   ],
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.withAlpha(40),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.greenAccent.withAlpha(80)),
-                                  ),
-                                  child: Text(
-                                    '${order['status']}',
-                                    style: const TextStyle(color: Colors.greenAccent, fontSize: 12, fontWeight: FontWeight.bold),
-                                  ),
+                                Row(
+                                  children: [
+                                    OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                      ),
+                                      onPressed: () => _showInvoiceDialog(context, orderId, langCode),
+                                      icon: const Icon(Icons.receipt_long, size: 14, color: AppColors.royalBlue),
+                                      label: Text(langCode == 'ps' ? 'فاکتور' : (langCode == 'prs' || langCode == 'fa' ? 'فاکتور خرید' : 'Invoice'), style: const TextStyle(fontSize: 11, color: AppColors.royalBlue)),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.withAlpha(40),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(color: Colors.greenAccent.withAlpha(80)),
+                                      ),
+                                      child: Text(
+                                        '${order['status']}',
+                                        style: const TextStyle(color: Colors.greenAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),

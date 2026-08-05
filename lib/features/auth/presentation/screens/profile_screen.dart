@@ -31,7 +31,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final authState = ref.read(authProvider);
     _nameController = TextEditingController(text: authState.userName ?? '');
     _emailController = TextEditingController(text: authState.email ?? '');
-    _phoneController = TextEditingController(text: authState.phoneNumber ?? '+93 700 123 456');
+    _phoneController = TextEditingController(text: '+93 700 123 456');
     _addressController = TextEditingController(text: 'Kabul, Afghanistan');
   }
 

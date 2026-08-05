@@ -85,7 +85,7 @@ class AgencyBannerCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           benefit,
-                          style: const TextStyle(fontSize: 12, color: Colors.white80),
+                          style: const TextStyle(fontSize: 12, color: Colors.white70),
                         ),
                       ),
                     ],

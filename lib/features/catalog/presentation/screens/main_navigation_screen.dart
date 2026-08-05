@@ -10,6 +10,7 @@ import '../../../auth/presentation/auth_provider.dart';
 import '../../../auth/presentation/screens/dashboard_screen.dart';
 import '../../../cart_checkout/presentation/cart_provider.dart';
 import '../../../cart_checkout/presentation/screens/cart_screen.dart';
+import '../../../notifications/presentation/notification_provider.dart';
 import 'home_screen.dart';
 import 'shop_screen.dart';
 
@@ -40,57 +41,74 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     }
   }
 
-  void _showRequestProductDialog() {
+  void _showNotificationsDialog(BuildContext context, String langCode) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Request New Product'),
-        content: const TextField(
-          decoration: InputDecoration(
-            labelText: 'Product Name / Details',
-            hintText: 'Enter product details to request...',
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Product request submitted successfully!')),
-              );
-            },
-            child: const Text('Submit Request'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAddMemberDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Team Member'),
-        content: const TextField(
-          decoration: InputDecoration(
-            labelText: 'Member Email Address',
-            hintText: 'user@marketplace.com',
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Team invitation sent!')),
-              );
-            },
-            child: const Text('Send Invite'),
-          ),
-        ],
-      ),
+      builder: (context) {
+        return Consumer(
+          builder: (context, ref, _) {
+            final notificationsAsync = ref.watch(notificationsProvider);
+            return AlertDialog(
+              title: Row(
+                children: [
+                  const Icon(Icons.notifications_active, color: AppColors.royalBlue),
+                  const SizedBox(width: 8),
+                  Text(langCode == 'ps' ? 'اعلانونه او خبرتیاوې' : (langCode == 'prs' || langCode == 'fa' ? 'اعلا‌ن‌های زنده سیستم' : 'Live Notifications')),
+                ],
+              ),
+              content: SizedBox(
+                width: 400,
+                height: 350,
+                child: notificationsAsync.when(
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (err, _) => Text('Error loading notifications: $err'),
+                  data: (notifications) {
+                    if (notifications.isEmpty) {
+                      return Center(
+                        child: Text(
+                          langCode == 'ps' ? 'هیڅ نوی اعلان نشته.' : (langCode == 'prs' || langCode == 'fa' ? 'هیچ اعلان جدیدی وجود ندارد.' : 'No notifications received.'),
+                          style: const TextStyle(color: Colors.white60),
+                        ),
+                      );
+                    }
+                    return ListView.separated(
+                      itemCount: notifications.length,
+                      separatorBuilder: (_, __) => const Divider(),
+                      itemBuilder: (context, index) {
+                        final notif = notifications[index];
+                        return ListTile(
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.royalBlue.withAlpha(30),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.notifications, color: AppColors.royalBlue, size: 20),
+                          ),
+                          title: Text(
+                            notif['title'] ?? 'Notification',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                          subtitle: Text(
+                            notif['message'] ?? '',
+                            style: const TextStyle(fontSize: 12, color: Colors.white70),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(langCode == 'ps' ? 'تړل' : (langCode == 'prs' || langCode == 'fa' ? 'بستن' : 'Close')),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -101,6 +119,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     final b10n = ref.watch(backendLocalizationProvider.notifier);
     final authState = ref.watch(authProvider);
     final cartItems = ref.watch(cartProvider);
+    final unreadNotifsCount = ref.watch(unreadNotificationsCountProvider);
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
     return Directionality(
@@ -121,7 +140,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                   Expanded(
                     child: Column(
                       children: [
-                        _buildTopHeaderBar(context, b10n, localeNotifier, authState, cartItems.length),
+                        _buildTopHeaderBar(context, b10n, localeNotifier, authState, cartItems.length, unreadNotifsCount),
                         _buildExploreFilterHeader(context, b10n),
                         Expanded(
                           child: _screens[_selectedIndex],
@@ -169,30 +188,20 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
               MaterialPageRoute(builder: (_) => const AgencyApplicationScreen()),
             );
           }),
-          const SizedBox(height: 8),
-          _buildQuickActionButton(Icons.add, b10n.translate('RequestForProduct', 'Request for product'), _showRequestProductDialog),
-          const SizedBox(height: 8),
-          _buildQuickActionButton(Icons.add, b10n.translate('AddMember', 'Add member'), _showAddMemberDialog),
           const Spacer(),
-          Text(b10n.translate('LastOrders', 'Last orders 37'), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          _buildOrderMiniItem('DXC Nike...', 'view order'),
-          const SizedBox(height: 6),
-          _buildOrderMiniItem('Outerwear...', 'view order'),
-          const SizedBox(height: 20),
 
-          // Conditional Auth Button (Login or Logout based on authState.isAuthenticated)
+          // Conditional Auth Button
           if (authState.isAuthenticated)
             InkWell(
               onTap: _handleLogout,
               borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0),
                 child: Row(
                   children: [
-                    const Icon(Icons.logout, size: 18, color: AppColors.dangerRed),
-                    const SizedBox(width: 8),
-                    Text(b10n.translate('LogOut', 'Log out'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.dangerRed)),
+                    Icon(Icons.logout, size: 18, color: AppColors.dangerRed),
+                    SizedBox(width: 8),
+                    Text('Log out', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.dangerRed)),
                   ],
                 ),
               ),
@@ -201,13 +210,13 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             InkWell(
               onTap: () => context.go('/login'),
               borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0),
                 child: Row(
                   children: [
-                    const Icon(Icons.login, size: 18, color: AppColors.royalBlue),
-                    const SizedBox(width: 8),
-                    Text(b10n.translate('LogIn', 'Log in'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.royalBlue)),
+                    Icon(Icons.login, size: 18, color: AppColors.royalBlue),
+                    SizedBox(width: 8),
+                    Text('Log in', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.royalBlue)),
                   ],
                 ),
               ),
@@ -264,24 +273,13 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     );
   }
 
-  Widget _buildOrderMiniItem(String title, String action) {
-    return Row(
-      children: [
-        const CircleAvatar(radius: 10, backgroundImage: NetworkImage('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100')),
-        const SizedBox(width: 8),
-        Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-        const Spacer(),
-        Text(action, style: const TextStyle(fontSize: 10, color: AppColors.royalBlue)),
-      ],
-    );
-  }
-
   Widget _buildTopHeaderBar(
     BuildContext context,
     dynamic b10n,
     dynamic localeNotifier,
     AuthState authState,
     int cartCount,
+    int unreadNotifsCount,
   ) {
     return Container(
       height: 70,
@@ -343,6 +341,30 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
           const Spacer(),
           Row(
             children: [
+              // Notification Bell Icon with Badge Counter
+              IconButton(
+                icon: Stack(
+                  children: [
+                    const Icon(Icons.notifications_outlined, color: AppColors.textPrimary, size: 22),
+                    if (unreadNotifsCount > 0)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
+                          child: Text(
+                            '$unreadNotifsCount',
+                            style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                onPressed: () => _showNotificationsDialog(context, localeNotifier.locale.languageCode),
+              ),
+              const SizedBox(width: 8),
+
               InkWell(
                 onTap: () {
                   setState(() => _selectedIndex = 3);
@@ -365,11 +387,10 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
               ),
               const SizedBox(width: 12),
 
-              // Conditional User Profile Header OR Login Button
               if (authState.isAuthenticated) ...[
                 const CircleAvatar(radius: 14, backgroundImage: NetworkImage('https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100')),
                 const SizedBox(width: 6),
-                Text(authState.userName ?? 'Ryana', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                Text(authState.userName ?? 'Customer', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
               ] else ...[
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
@@ -427,23 +448,6 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             ),
           ),
           const Spacer(),
-          InkWell(
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Filters applied!')),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Text(b10n.translate('Filters', 'Filters'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-            ),
-          ),
-          const SizedBox(width: 10),
           InkWell(
             onTap: () {
               setState(() => _selectedIndex = 2);

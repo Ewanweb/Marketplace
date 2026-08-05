@@ -17,6 +17,60 @@ class CartScreen extends ConsumerStatefulWidget {
 
 class _CartScreenState extends ConsumerState<CartScreen> {
   bool _isCheckingOut = false;
+  final _couponController = TextEditingController(text: 'NOORZAI20');
+  double _appliedDiscountAmount = 0.0;
+  String? _appliedCouponCode;
+  bool _isApplyingCoupon = false;
+
+  @override
+  void dispose() {
+    _couponController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleApplyCoupon(double rawTotal) async {
+    final code = _couponController.text.trim();
+    if (code.isEmpty) return;
+
+    setState(() => _isApplyingCoupon = true);
+
+    final apiClient = ref.read(apiClientProvider);
+    final locale = ref.read(localeProvider);
+
+    final response = await apiClient.post(
+      '/coupons/apply',
+      {
+        "code": code,
+        "orderAmount": rawTotal,
+      },
+      languageCode: locale.languageCode,
+    );
+
+    setState(() => _isApplyingCoupon = false);
+
+    if (mounted) {
+      if (response != null && response['isSuccess'] == true && response['value'] != null) {
+        final val = response['value'];
+        setState(() {
+          _appliedDiscountAmount = (val['discountAmount'] as num).toDouble();
+          _appliedCouponCode = val['code'];
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Promo Code ${_appliedCouponCode} applied! Saved \$${_appliedDiscountAmount.toStringAsFixed(2)}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response?['error']?['message'] ?? 'Invalid promo code.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
+  }
 
   void _showPaymentModal(String langCode) {
     final cartItems = ref.read(cartProvider);
@@ -174,6 +228,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
 
       if (paymentResponse != null && paymentResponse['isSuccess'] == true && mounted) {
         ref.read(cartProvider.notifier).clearCart();
+        setState(() {
+          _appliedDiscountAmount = 0.0;
+          _appliedCouponCode = null;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Payment successful! Order processed and status set to Paid.'),
@@ -207,6 +265,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     final cartNotifier = ref.read(cartProvider.notifier);
     final locale = ref.watch(localeProvider);
     final langCode = locale.languageCode;
+
+    final rawTotal = cartNotifier.totalAmount;
+    final finalTotal = Math.max(0.0, rawTotal - _appliedDiscountAmount);
 
     if (cartItems.isEmpty) {
       return Center(
@@ -296,7 +357,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           ),
         ),
 
-        // Summary Order Card
+        // Summary Order Card with Promo Code Input
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -306,16 +367,73 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           ),
           child: Column(
             children: [
+              // Promo Code Section
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _couponController,
+                      style: const TextStyle(fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'Enter Promo Code (e.g. NOORZAI20)',
+                        prefixIcon: const Icon(Icons.confirmation_number_outlined, size: 18, color: AppColors.royalBlue),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  _isApplyingCoupon
+                      ? const CircularProgressIndicator()
+                      : ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.royalBlue,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          onPressed: () => _handleApplyCoupon(rawTotal),
+                          child: Text(langCode == 'ps' ? 'اعمال' : (langCode == 'prs' || langCode == 'fa' ? 'اعمال تخفیف' : 'Apply')),
+                        ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              if (_appliedDiscountAmount > 0) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Subtotal:', style: const TextStyle(color: Colors.white70)),
+                    Text('\$${rawTotal.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.check_circle, color: Colors.greenAccent, size: 16),
+                        const SizedBox(width: 4),
+                        Text('Discount (${_appliedCouponCode}):', style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    Text('-\$${_appliedDiscountAmount.toStringAsFixed(2)}', style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const Divider(height: 16),
+              ],
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    langCode == 'ps' ? 'ټوله مجموعه' : (langCode == 'prs' || langCode == 'fa' ? 'مجموع کل' : 'Total'),
+                    langCode == 'ps' ? 'ټوله مجموعه' : (langCode == 'prs' || langCode == 'fa' ? 'مجموع قابل پرداخت' : 'Final Total'),
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    '\$${cartNotifier.totalAmount.toStringAsFixed(2)}',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFFA29BFE)),
+                    '\$${finalTotal.toStringAsFixed(2)}',
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFFA29BFE)),
                   ),
                 ],
               ),
@@ -332,4 +450,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       ],
     );
   }
+}
+
+class Math {
+  static double max(double a, double b) => a > b ? a : b;
 }

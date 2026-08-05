@@ -22,6 +22,30 @@ class ApiClient {
     return headers;
   }
 
+  Future<void> sendClientLog({
+    required String message,
+    String? stackTrace,
+    String level = 'Error',
+    String? route,
+    String? token,
+  }) async {
+    try {
+      final url = Uri.parse('$baseApiUrl/logs/client');
+      await _client.post(
+        url,
+        headers: _headers('en', token: token),
+        body: jsonEncode({
+          'message': message,
+          'stackTrace': stackTrace,
+          'level': level,
+          'route': route ?? 'FlutterClient',
+        }),
+      );
+    } catch (_) {
+      // Ignore logging failures
+    }
+  }
+
   Future<Map<String, String>?> getLocalizationStrings(String languageCode) async {
     try {
       final url = Uri.parse('$baseApiUrl/localization/strings');
@@ -37,8 +61,8 @@ class ApiClient {
           return val.map((k, v) => MapEntry(k, v.toString()));
         }
       }
-    } catch (_) {
-      // Fallback map handled in provider
+    } catch (e) {
+      sendClientLog(message: 'getLocalizationStrings error: $e', level: 'Warning');
     }
     return null;
   }
@@ -54,8 +78,12 @@ class ApiClient {
         url,
         headers: _headers(languageCode, token: token),
       );
+      if (response.statusCode >= 400) {
+        sendClientLog(message: 'GET $endpoint failed with Status ${response.statusCode}', level: 'Warning', token: token);
+      }
       return _processResponse(response);
     } catch (e) {
+      sendClientLog(message: 'GET $endpoint connection error: $e', level: 'Error', token: token);
       return null;
     }
   }
@@ -74,8 +102,14 @@ class ApiClient {
         headers: _headers(languageCode, token: token),
         body: jsonEncode(body),
       );
+      if (response.statusCode >= 400 && !fullEndpoint.contains('/logs/client')) {
+        sendClientLog(message: 'POST $fullEndpoint failed with Status ${response.statusCode}', level: 'Warning', token: token);
+      }
       return _processResponse(response);
     } catch (e) {
+      if (!endpoint.contains('/logs/client')) {
+        sendClientLog(message: 'POST $endpoint connection error: $e', level: 'Error', token: token);
+      }
       return null;
     }
   }
@@ -93,8 +127,12 @@ class ApiClient {
         headers: _headers(languageCode, token: token),
         body: jsonEncode(body),
       );
+      if (response.statusCode >= 400) {
+        sendClientLog(message: 'PUT $endpoint failed with Status ${response.statusCode}', level: 'Warning', token: token);
+      }
       return _processResponse(response);
     } catch (e) {
+      sendClientLog(message: 'PUT $endpoint connection error: $e', level: 'Error', token: token);
       return null;
     }
   }
@@ -110,8 +148,12 @@ class ApiClient {
         url,
         headers: _headers(languageCode, token: token),
       );
+      if (response.statusCode >= 400) {
+        sendClientLog(message: 'DELETE $endpoint failed with Status ${response.statusCode}', level: 'Warning', token: token);
+      }
       return _processResponse(response);
     } catch (e) {
+      sendClientLog(message: 'DELETE $endpoint connection error: $e', level: 'Error', token: token);
       return null;
     }
   }
