@@ -21,7 +21,11 @@ public sealed class CreateOrderCommandValidator : AbstractValidator<CreateOrderC
     {
         RuleFor(x => x.CustomerName).NotEmpty().MaximumLength(150);
         RuleFor(x => x.ShippingAddress).NotEmpty();
-        RuleFor(x => x.Items).NotEmpty();
+        RuleForEach(x => x.Items).ChildRules(item =>
+        {
+            item.RuleFor(i => i.ProductId).NotEmpty();
+            item.RuleFor(i => i.Quantity).GreaterThan(0).LessThanOrEqualTo(100);
+        });
     }
 }
 
@@ -46,6 +50,12 @@ public sealed class CreateOrderCommandHandler : IRequestHandler<CreateOrderComma
         {
             if (products.TryGetValue(itemReq.ProductId, out var product))
             {
+                if (!product.HasSufficientStock(itemReq.Quantity))
+                {
+                    return Result.Failure<Guid>(Error.Validation("Product.InsufficientStock",
+                        $"Product '{product.TitleEn}' has only {product.StockQuantity} items in stock."));
+                }
+
                 product.DecreaseStock(itemReq.Quantity);
                 orderItems.Add(OrderItem.Create(
                     product.Id,

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Marketplace.Application.Payments.Commands.ProcessPayment;
+using Marketplace.API.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,6 +13,7 @@ public class PaymentsController : ApiControllerBase
     /// Authenticated customer endpoint to process order payment and split vendor commission.
     /// </summary>
     [HttpPost("process")]
+    [HasPermission("Payments.Process")]
     public async Task<IActionResult> ProcessPayment([FromBody] ProcessPaymentRequest request, CancellationToken cancellationToken)
     {
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);

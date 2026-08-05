@@ -54,6 +54,9 @@ public sealed class ApplyCouponCommandHandler : IRequestHandler<ApplyCouponComma
         var discountAmount = coupon.CalculateDiscount(request.OrderAmount);
         var finalAmount = Math.Max(0m, request.OrderAmount - discountAmount);
 
+        coupon.IncrementUsage();
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
         var result = new ApplyCouponResultDto(
             coupon.Code,
             request.OrderAmount,

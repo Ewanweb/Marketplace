@@ -38,6 +38,12 @@ public sealed class ProcessPaymentCommandHandler : IRequestHandler<ProcessPaymen
             return Result.Failure<Guid>(Error.NotFound("Order.NotFound", "Order not found."));
         }
 
+        if (order.UserId != request.UserId)
+        {
+            return Result.Failure<Guid>(Error.Forbidden("Payment.Unauthorized",
+                "You are not authorized to pay for this order."));
+        }
+
         var existingPayment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.OrderId == request.OrderId && p.Status == PaymentStatus.Success, cancellationToken);
         if (existingPayment != null)
         {

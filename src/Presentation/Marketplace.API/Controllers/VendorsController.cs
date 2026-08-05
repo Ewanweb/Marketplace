@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Marketplace.Application.Vendors.Commands.RegisterVendor;
 using Marketplace.Application.Vendors.Queries.GetVendors;
+using Marketplace.API.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,7 +23,7 @@ public class VendorsController : ApiControllerBase
     /// Authenticated endpoint to register current user as a vendor.
     /// </summary>
     [HttpPost("register")]
-    [Authorize]
+    [HasPermission("Vendors.Register")]
     public async Task<IActionResult> RegisterVendor([FromBody] RegisterVendorRequest request, CancellationToken cancellationToken)
     {
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);

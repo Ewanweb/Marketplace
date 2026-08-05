@@ -12,7 +12,9 @@ public sealed record RegisterVendorCommand(
     string ShopNameEn,
     string ShopNamePrs,
     string ShopNamePs,
-    string Description,
+    string DescriptionEn,
+    string DescriptionPrs,
+    string DescriptionPs,
     string BankAccountInfo,
     string LogoUrl = "",
     string BannerUrl = "") : IRequest<Result<Guid>>;
@@ -56,9 +58,9 @@ public sealed class RegisterVendorCommandHandler : IRequestHandler<RegisterVendo
             request.ShopNameEn,
             request.ShopNamePrs,
             request.ShopNamePs,
-            request.Description,
-            request.Description,
-            request.Description,
+            request.DescriptionEn,
+            request.DescriptionPrs,
+            request.DescriptionPs,
             request.LogoUrl,
             request.BannerUrl);
 

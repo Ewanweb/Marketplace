@@ -71,7 +71,14 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, Result<L
 
         if (user.IsLockedOut())
         {
-            return Result.Failure<LoginResponse>(Error.Forbidden("Auth.AccountLocked", AuthMessages.AccountLocked));
+            return Result.Failure<LoginResponse>(Error.Forbidden("Auth.AccountLocked", 
+                "Your account is locked due to multiple failed login attempts. Please try again later."));
+        }
+
+        if (!user.IsEmailConfirmed)
+        {
+            return Result.Failure<LoginResponse>(Error.Forbidden("Auth.EmailNotConfirmed",
+                "Please verify your email address before logging in."));
         }
 
         var isPasswordValid = _passwordHasher.VerifyPassword(request.Password, user.PasswordHash);

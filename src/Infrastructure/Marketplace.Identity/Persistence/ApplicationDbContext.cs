@@ -128,7 +128,7 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
             Id = adminUserId,
             FullName = "System Admin",
             Email = "admin@noorzai.com",
-            PasswordHash = "dummy-hash",
+            PasswordHash = "$argon2id$v=19$m=65536,t=3,p=1$t3spA9wh4NUB1wk5kT9ejw$WIU+dzsDyvQ2XZcKoeWI3KMXvsMTCfQtZ1DrlWd8P4w",
             IsEmailConfirmed = true,
             IsTwoFactorEnabled = false,
             IsLockoutEnabled = true,

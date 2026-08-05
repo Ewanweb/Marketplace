@@ -49,11 +49,10 @@ services:
       - marketplace.seq
 
   marketplace.web:
-    image: marketplace-web
+    image: nginx:alpine
     container_name: marketplace_web
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    volumes:
+      - ../frontend/build/web:/usr/share/nginx/html:ro
     ports:
       - "3000:80"
     depends_on:

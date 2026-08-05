@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Marketplace.Application.Users.Queries.GetMyProfile;
+using Marketplace.API.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,6 +13,7 @@ public class UsersController : ApiControllerBase
     /// Authenticated endpoint to fetch the current logged-in user profile.
     /// </summary>
     [HttpGet("me")]
+    [HasPermission("Users.ViewProfile")]
     public async Task<IActionResult> GetMyProfile(CancellationToken cancellationToken)
     {
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);

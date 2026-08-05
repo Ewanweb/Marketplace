@@ -48,14 +48,14 @@ public sealed class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, 
 
         if (!string.IsNullOrWhiteSpace(request.SearchQuery))
         {
-            var search = request.SearchQuery.Trim().ToLower();
+            var search = $"%{request.SearchQuery.Trim()}%";
             query = query.Where(p =>
-                p.TitleEn.ToLower().Contains(search) ||
-                p.TitlePrs.ToLower().Contains(search) ||
-                p.TitlePs.ToLower().Contains(search) ||
-                p.DescriptionEn.ToLower().Contains(search) ||
-                p.DescriptionPrs.ToLower().Contains(search) ||
-                p.DescriptionPs.ToLower().Contains(search));
+                EF.Functions.Like(p.TitleEn, search) ||
+                EF.Functions.Like(p.TitlePrs, search) ||
+                EF.Functions.Like(p.TitlePs, search) ||
+                EF.Functions.Like(p.DescriptionEn, search) ||
+                EF.Functions.Like(p.DescriptionPrs, search) ||
+                EF.Functions.Like(p.DescriptionPs, search));
         }
 
         if (request.CategoryId.HasValue)

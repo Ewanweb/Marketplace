@@ -41,13 +41,24 @@ public sealed class CreateReviewCommandHandler : IRequestHandler<CreateReviewCom
             return Result.Failure<Guid>(Error.NotFound("Product.NotFound", "Product not found."));
         }
 
+        var hasPurchased = await _dbContext.OrderItems
+            .AnyAsync(oi => oi.ProductId == request.ProductId
+                && _dbContext.Orders.Any(o => o.Id == oi.OrderId && o.UserId == request.UserId),
+                cancellationToken);
+
+        if (!hasPurchased)
+        {
+            return Result.Failure<Guid>(Error.Forbidden("Review.NotPurchased",
+                "You can only review products you have purchased."));
+        }
+
         var review = Review.Create(
             request.UserId,
             request.ProductId,
             product.VendorId,
             request.Rating,
             request.Comment,
-            isVerifiedPurchase: true);
+            isVerifiedPurchase: hasPurchased);
 
         _dbContext.Reviews.Add(review);
         await _dbContext.SaveChangesAsync(cancellationToken);

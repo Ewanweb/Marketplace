@@ -1,7 +1,9 @@
 using System.Text;
 using System.Threading.RateLimiting;
 using FluentValidation;
+using Marketplace.API.Authorization;
 using Marketplace.API.Middleware;
+using Microsoft.AspNetCore.Authorization;
 using Marketplace.Application.Authentication.Commands.LoginUser;
 using Marketplace.Identity;
 using Marketplace.Identity.Persistence;
@@ -90,6 +92,8 @@ try
     });
     
     builder.Services.AddAuthorization();
+    builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+    builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
     // Localization Setup (Trilingual: English, Dari/Persian, Pashto)
     var supportedCultures = new[] { "en", "prs", "fa", "ps" };
@@ -123,6 +127,7 @@ try
     {
         var context = scope.ServiceProvider.GetRequiredService<Marketplace.Identity.Persistence.ApplicationDbContext>();
         context.Database.Migrate();
+        await RbacSeeder.SeedAsync(scope.ServiceProvider);
     }
     app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
     app.UseMiddleware<SecurityHeadersMiddleware>();
@@ -141,6 +146,24 @@ try
     }
 
     app.UseCors("AllowAll");
+
+    var wwwrootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+    if (!Directory.Exists(wwwrootPath))
+    {
+        Directory.CreateDirectory(wwwrootPath);
+    }
+    var uploadsPath = Path.Combine(wwwrootPath, "uploads");
+    if (!Directory.Exists(uploadsPath))
+    {
+        Directory.CreateDirectory(uploadsPath);
+    }
+
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(wwwrootPath),
+        RequestPath = ""
+    });
+
     app.UseRateLimiter();
     app.UseAuthentication();
     app.UseAuthorization();

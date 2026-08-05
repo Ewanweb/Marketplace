@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Marketplace.Application.Notifications.Commands.MarkNotificationAsRead;
 using Marketplace.Application.Notifications.Queries.GetMyNotifications;
+using Marketplace.API.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,6 +14,7 @@ public class NotificationsController : ApiControllerBase
     /// Authenticated endpoint to fetch user's live notifications.
     /// </summary>
     [HttpGet]
+    [HasPermission("Notifications.View")]
     public async Task<IActionResult> GetMyNotifications(CancellationToken cancellationToken)
     {
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -29,6 +31,7 @@ public class NotificationsController : ApiControllerBase
     /// Authenticated endpoint to mark a notification as read.
     /// </summary>
     [HttpPost("{id:guid}/read")]
+    [HasPermission("Notifications.View")]
     public async Task<IActionResult> MarkAsRead(Guid id, CancellationToken cancellationToken)
     {
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);

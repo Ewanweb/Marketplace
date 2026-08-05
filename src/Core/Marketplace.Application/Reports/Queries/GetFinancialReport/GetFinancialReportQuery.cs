@@ -29,21 +29,23 @@ public sealed class GetFinancialReportQueryHandler : IRequestHandler<GetFinancia
 
     public async Task<Result<FinancialReportDto>> Handle(GetFinancialReportQuery request, CancellationToken cancellationToken)
     {
-        var orders = await _dbContext.Orders
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
-
-        var payments = await _dbContext.Payments
-            .AsNoTracking()
+        var totalGrossSales = await _dbContext.Payments
             .Where(p => p.Status == PaymentStatus.Success)
-            .ToListAsync(cancellationToken);
+            .SumAsync(p => p.Amount, cancellationToken);
 
-        var totalGrossSales = payments.Sum(p => p.Amount);
-        var platformCommission = payments.Sum(p => p.PlatformFee);
-        var vendorPayoutTotal = payments.Sum(p => p.VendorAmount);
+        var platformCommission = await _dbContext.Payments
+            .Where(p => p.Status == PaymentStatus.Success)
+            .SumAsync(p => p.PlatformFee, cancellationToken);
 
-        var totalOrdersCount = orders.Count;
-        var paidOrdersCount = payments.Count;
+        var vendorPayoutTotal = await _dbContext.Payments
+            .Where(p => p.Status == PaymentStatus.Success)
+            .SumAsync(p => p.VendorAmount, cancellationToken);
+
+        var totalOrdersCount = await _dbContext.Orders.CountAsync(cancellationToken);
+        
+        var paidOrdersCount = await _dbContext.Payments
+            .CountAsync(p => p.Status == PaymentStatus.Success, cancellationToken);
+            
         var avgOrderValue = paidOrdersCount > 0 ? Math.Round(totalGrossSales / paidOrdersCount, 2) : 0m;
 
         var activeVendorsCount = await _dbContext.Vendors.CountAsync(v => v.IsActive, cancellationToken);

@@ -50,4 +50,13 @@ public class Argon2idPasswordHasherTests
         // Assert
         Assert.False(isValid);
     }
+
+    [Fact]
+    public void VerifyPassword_WithSeededAdminPassword_ShouldReturnTrue()
+    {
+        var password = "Admin@123456";
+        var hash = "$argon2id$v=19$m=65536,t=3,p=1$t3spA9wh4NUB1wk5kT9ejw$WIU+dzsDyvQ2XZcKoeWI3KMXvsMTCfQtZ1DrlWd8P4w";
+        var isValid = _hasher.VerifyPassword(password, hash);
+        Assert.True(isValid);
+    }
 }

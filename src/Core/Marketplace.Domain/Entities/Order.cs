@@ -33,7 +33,7 @@ public class Order
         var order = new Order
         {
             Id = Guid.NewGuid(),
-            OrderNumber = $"ORD-{Random.Shared.Next(1000, 9999)}",
+            OrderNumber = $"ORD-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..8].ToUpper()}",
             UserId = userId,
             CustomerName = customerName.Trim(),
             ShippingAddress = shippingAddress.Trim(),

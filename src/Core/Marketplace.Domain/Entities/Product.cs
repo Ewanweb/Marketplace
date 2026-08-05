@@ -76,12 +76,17 @@ public class Product
         ImageUrl = imageUrl;
     }
 
+    public bool HasSufficientStock(int quantity) => StockQuantity >= quantity;
+
     public void DecreaseStock(int quantity)
     {
-        if (quantity > 0)
-        {
-            StockQuantity = Math.Max(0, StockQuantity - quantity);
-        }
+        if (quantity <= 0)
+            throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be positive.");
+
+        if (StockQuantity < quantity)
+            throw new InvalidOperationException($"Insufficient stock. Requested: {quantity}, Available: {StockQuantity}");
+
+        StockQuantity -= quantity;
     }
 
     public void SoftDelete()

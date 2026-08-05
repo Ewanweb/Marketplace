@@ -54,8 +54,8 @@ public sealed class GlobalExceptionHandlerMiddleware
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-        var error = Error.Failure("Server.InternalError", "An unexpected internal server error occurred.");
-        var response = JsonSerializer.Serialize(error);
+        var result = new { isSuccess = false, error = new { code = "Server.InternalError", message = "An unexpected internal server error occurred." } };
+        var response = JsonSerializer.Serialize(result);
 
         return context.Response.WriteAsync(response);
     }

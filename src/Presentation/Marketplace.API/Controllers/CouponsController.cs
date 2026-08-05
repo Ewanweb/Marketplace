@@ -1,4 +1,5 @@
 using Marketplace.Application.Coupons.Commands.ApplyCoupon;
+using Marketplace.API.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Marketplace.API.Controllers;
@@ -9,6 +10,7 @@ public class CouponsController : ApiControllerBase
     /// Validates a promo coupon code and calculates instant order discounts.
     /// </summary>
     [HttpPost("apply")]
+    [HasPermission("Coupons.Apply")]
     public async Task<IActionResult> ApplyCoupon([FromBody] ApplyCouponRequest request, CancellationToken cancellationToken)
     {
         var command = new ApplyCouponCommand(request.Code, request.OrderAmount);
