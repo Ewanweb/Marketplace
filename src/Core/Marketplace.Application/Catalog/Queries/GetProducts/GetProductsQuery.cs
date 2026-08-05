@@ -15,12 +15,18 @@ public sealed record ProductDto(
     double Rating,
     string ImageUrl,
     Guid CategoryId,
+    Guid VendorId,
+    string VendorName,
     List<string> AvailableSizes,
     List<string> AvailableColors);
 
 public sealed record GetProductsQuery(
     string? SearchQuery = null,
-    Guid? CategoryId = null) : IRequest<Result<List<ProductDto>>>;
+    Guid? CategoryId = null,
+    Guid? VendorId = null,
+    decimal? MinPrice = null,
+    decimal? MaxPrice = null,
+    string? SortBy = null) : IRequest<Result<List<ProductDto>>>;
 
 public sealed class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, Result<List<ProductDto>>>
 {
@@ -37,6 +43,7 @@ public sealed class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, 
 
         var query = _dbContext.Products
             .AsNoTracking()
+            .Include(p => p.Vendor)
             .Where(p => p.IsActive);
 
         if (!string.IsNullOrWhiteSpace(request.SearchQuery))
@@ -45,13 +52,40 @@ public sealed class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, 
             query = query.Where(p =>
                 p.TitleEn.ToLower().Contains(search) ||
                 p.TitlePrs.ToLower().Contains(search) ||
-                p.TitlePs.ToLower().Contains(search));
+                p.TitlePs.ToLower().Contains(search) ||
+                p.DescriptionEn.ToLower().Contains(search) ||
+                p.DescriptionPrs.ToLower().Contains(search) ||
+                p.DescriptionPs.ToLower().Contains(search));
         }
 
         if (request.CategoryId.HasValue)
         {
             query = query.Where(p => p.CategoryId == request.CategoryId.Value);
         }
+
+        if (request.VendorId.HasValue)
+        {
+            query = query.Where(p => p.VendorId == request.VendorId.Value);
+        }
+
+        if (request.MinPrice.HasValue)
+        {
+            query = query.Where(p => p.Price >= request.MinPrice.Value);
+        }
+
+        if (request.MaxPrice.HasValue)
+        {
+            query = query.Where(p => p.Price <= request.MaxPrice.Value);
+        }
+
+        query = (request.SortBy?.ToLower()) switch
+        {
+            "price_asc" => query.OrderBy(p => p.Price),
+            "price_desc" => query.OrderByDescending(p => p.Price),
+            "rating_desc" => query.OrderByDescending(p => p.Rating),
+            "newest" => query.OrderByDescending(p => p.CreatedAt),
+            _ => query.OrderByDescending(p => p.CreatedAt)
+        };
 
         var products = await query.ToListAsync(cancellationToken);
 
@@ -64,6 +98,8 @@ public sealed class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, 
             p.Rating,
             p.ImageUrl,
             p.CategoryId,
+            p.VendorId,
+            p.Vendor != null ? p.Vendor.GetShopName(culture) : "Noorzai Official",
             p.AvailableSizes.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList(),
             p.AvailableColors.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(c => c.Trim()).ToList()
         )).ToList();

@@ -89,6 +89,14 @@ public class Product
         IsActive = false;
     }
 
+    public void UpdateRating(double newRating)
+    {
+        if (newRating >= 1.0 && newRating <= 5.0)
+        {
+            Rating = Math.Round(newRating, 1);
+        }
+    }
+
     public string GetTitle(string cultureName)
     {
         var culture = cultureName.ToLowerInvariant();

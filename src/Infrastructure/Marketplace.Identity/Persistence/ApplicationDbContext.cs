@@ -23,6 +23,8 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<Vendor> Vendors => Set<Vendor>();
+    public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<Review> Reviews => Set<Review>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,7 +42,18 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             builder.HasKey(v => v.Id);
             builder.Property(v => v.ShopNameEn).HasMaxLength(200).IsRequired();
+            builder.Property(v => v.CommissionRate).HasPrecision(18, 4);
             builder.HasOne(v => v.User).WithMany().HasForeignKey(v => v.UserId);
+        });
+
+        modelBuilder.Entity<Payment>(builder =>
+        {
+            builder.HasKey(p => p.Id);
+            builder.Property(p => p.Amount).HasPrecision(18, 2);
+            builder.Property(p => p.PlatformFee).HasPrecision(18, 2);
+            builder.Property(p => p.VendorAmount).HasPrecision(18, 2);
+            builder.HasOne(p => p.Order).WithMany().HasForeignKey(p => p.OrderId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne(p => p.User).WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Role>(builder =>
