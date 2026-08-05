@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/localization/locale_provider.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_card.dart';
 import '../../../auth/presentation/auth_provider.dart';
@@ -17,7 +18,116 @@ class CartScreen extends ConsumerStatefulWidget {
 class _CartScreenState extends ConsumerState<CartScreen> {
   bool _isCheckingOut = false;
 
-  Future<void> _handleCheckout() async {
+  void _showPaymentModal(String langCode) {
+    final cartItems = ref.read(cartProvider);
+    if (cartItems.isEmpty) return;
+
+    final authState = ref.read(authProvider);
+    String selectedPaymentMethod = 'CreditCard';
+    final addressController = TextEditingController(text: 'Kabul, Afghanistan');
+    final customerNameController = TextEditingController(text: authState.userName ?? 'Valued Customer');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            padding: EdgeInsets.only(
+              top: 24,
+              left: 24,
+              right: 24,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            ),
+            decoration: const BoxDecoration(
+              color: Color(0xFF1E1E2E),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      langCode == 'ps' ? 'د تادیې طریقه غوره کړئ' : (langCode == 'prs' || langCode == 'fa' ? 'درگاه و روش پرداخت آنلاین' : 'Online Payment Gateway'),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: customerNameController,
+                  decoration: InputDecoration(
+                    labelText: langCode == 'ps' ? 'د پیرودونکي نوم' : (langCode == 'prs' || langCode == 'fa' ? 'نام گیرنده سفارش' : 'Customer Name'),
+                    prefixIcon: const Icon(Icons.person),
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: addressController,
+                  decoration: InputDecoration(
+                    labelText: langCode == 'ps' ? 'د تحویلۍ پته' : (langCode == 'prs' || langCode == 'fa' ? 'آدرس دقیق تحویل سفارش' : 'Shipping Address'),
+                    prefixIcon: const Icon(Icons.location_on),
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  langCode == 'ps' ? 'د تادیې بڼه:' : (langCode == 'prs' || langCode == 'fa' ? 'انتخاب روش پرداخت:' : 'Payment Method:'),
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white70),
+                ),
+                const SizedBox(height: 10),
+                RadioListTile<String>(
+                  title: const Text('Credit Card / Master / Visa'),
+                  secondary: const Icon(Icons.credit_card, color: Colors.blueAccent),
+                  value: 'CreditCard',
+                  groupValue: selectedPaymentMethod,
+                  onChanged: (val) => setModalState(() => selectedPaymentMethod = val!),
+                ),
+                RadioListTile<String>(
+                  title: const Text('Digital Wallet (PayPal / EasyPaisa)'),
+                  secondary: const Icon(Icons.account_balance_wallet, color: Colors.purpleAccent),
+                  value: 'DigitalWallet',
+                  groupValue: selectedPaymentMethod,
+                  onChanged: (val) => setModalState(() => selectedPaymentMethod = val!),
+                ),
+                RadioListTile<String>(
+                  title: Text(langCode == 'ps' ? 'په لاس په لاس تادیه (COD)' : (langCode == 'prs' || langCode == 'fa' ? 'پرداخت در محل هنگام تحویل' : 'Cash on Delivery (COD)')),
+                  secondary: const Icon(Icons.local_shipping, color: Colors.greenAccent),
+                  value: 'CashOnDelivery',
+                  groupValue: selectedPaymentMethod,
+                  onChanged: (val) => setModalState(() => selectedPaymentMethod = val!),
+                ),
+                const SizedBox(height: 24),
+                CustomButton(
+                  text: langCode == 'ps' ? 'تادیه او نهایي کول' : (langCode == 'prs' || langCode == 'fa' ? 'پرداخت آنلاین و ثبت نهایی سفارش' : 'Pay & Confirm Order'),
+                  icon: Icons.lock,
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await _executeCheckoutAndPayment(
+                      customerNameController.text.trim(),
+                      addressController.text.trim(),
+                      selectedPaymentMethod,
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _executeCheckoutAndPayment(String customerName, String shippingAddress, String paymentMethod) async {
     final cartItems = ref.read(cartProvider);
     if (cartItems.isEmpty) return;
 
@@ -34,30 +144,57 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       };
     }).toList();
 
-    final response = await apiClient.post(
+    // 1. Create Order
+    final orderResponse = await apiClient.post(
       '/orders',
       {
-        "customerName": "Customer", // This should ideally come from User Profile
+        "customerName": customerName.isNotEmpty ? customerName : "Valued Customer",
+        "shippingAddress": shippingAddress.isNotEmpty ? shippingAddress : "Kabul, Afghanistan",
         "items": itemsPayload
       },
       languageCode: locale.languageCode,
       token: token,
     );
 
-    setState(() => _isCheckingOut = false);
+    if (orderResponse != null && orderResponse['isSuccess'] == true && orderResponse['value'] != null) {
+      final orderId = orderResponse['value'];
 
-    if (response != null && response['isSuccess'] == true && mounted) {
-      ref.read(cartProvider.notifier).clearCart();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Order placed successfully! Thank you for buying.'),
-          backgroundColor: Colors.green,
-        ),
+      // 2. Process Online Payment Gateway
+      final paymentResponse = await apiClient.post(
+        '/payments/process',
+        {
+          "orderId": orderId,
+          "paymentMethod": paymentMethod
+        },
+        languageCode: locale.languageCode,
+        token: token,
       );
+
+      setState(() => _isCheckingOut = false);
+
+      if (paymentResponse != null && paymentResponse['isSuccess'] == true && mounted) {
+        ref.read(cartProvider.notifier).clearCart();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment successful! Order processed and status set to Paid.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      } else if (mounted) {
+        ref.read(cartProvider.notifier).clearCart();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Order created successfully! Pending payment.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     } else if (mounted) {
+      setState(() => _isCheckingOut = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to place order: ${response?['error']?['message'] ?? 'Unknown error'}'),
+          content: Text('Failed to place order: ${orderResponse?['error']?['message'] ?? 'Unknown error'}'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -186,8 +323,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               _isCheckingOut
                   ? const Center(child: CircularProgressIndicator())
                   : CustomButton(
-                      text: langCode == 'ps' ? 'د پېرلو منل او تادیه' : (langCode == 'prs' || langCode == 'fa' ? 'تکمیل سفارش و پرداخت' : 'Proceed to Checkout'),
-                      onPressed: _handleCheckout,
+                      text: langCode == 'ps' ? 'د پېرلو منل او تادیه' : (langCode == 'prs' || langCode == 'fa' ? 'تکمیل سفارش و پرداخت آنلاین' : 'Proceed to Checkout & Pay'),
+                      onPressed: () => _showPaymentModal(langCode),
                     ),
             ],
           ),

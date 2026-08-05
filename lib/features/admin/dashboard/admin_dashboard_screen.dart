@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/localization/locale_provider.dart';
 import '../../../../shared/widgets/custom_card.dart';
+import '../../agency/presentation/screens/agency_application_screen.dart';
+import '../../auth/presentation/screens/profile_screen.dart';
 
 class AdminDashboardScreen extends ConsumerWidget {
   const AdminDashboardScreen({super.key});
@@ -14,9 +17,38 @@ class AdminDashboardScreen extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        Text(
-          langCode == 'ps' ? 'د پلور عمومي لید' : (langCode == 'prs' || langCode == 'fa' ? 'نمای کلی فروش و عملکرد' : 'Sales Overview & Analytics'),
-          style: Theme.of(context).textTheme.titleLarge,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              langCode == 'ps' ? 'د پلور عمومي لید' : (langCode == 'prs' || langCode == 'fa' ? 'نمای کلی فروش و عملکرد' : 'Sales Overview & Analytics'),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            Wrap(
+              spacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.person_outline, size: 16),
+                  label: Text(langCode == 'ps' ? 'پروفایل' : (langCode == 'prs' || langCode == 'fa' ? 'ویرایش پروفایل' : 'Profile')),
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                  },
+                ),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.verified_user_outlined, size: 16),
+                  label: Text(langCode == 'ps' ? 'نمایندګي' : (langCode == 'prs' || langCode == 'fa' ? 'درخواست نمایندگی' : 'Agency')),
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AgencyApplicationScreen()));
+                  },
+                ),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.store, size: 16),
+                  label: Text(langCode == 'ps' ? 'اصلي پاڼه' : (langCode == 'prs' || langCode == 'fa' ? 'صفحه اصلی فروشگاه' : 'Home Page')),
+                  onPressed: () => context.go('/'),
+                ),
+              ],
+            ),
+          ],
         ),
         const SizedBox(height: 20),
 
@@ -63,24 +95,24 @@ class AdminDashboardScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                langCode == 'ps' ? 'د میاشتني هدف سلنه' : (langCode == 'prs' || langCode == 'fa' ? 'درصد پیشرفت هدف ماهانه' : 'Monthly Goal Progress'),
+                langCode == 'ps' ? 'د میاشتني هدف پرمختګ' : (langCode == 'prs' || langCode == 'fa' ? 'پیشرفت هدف ماهانه' : 'Monthly Goal Progress'),
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 16),
-              const LinearProgressIndicator(
+              LinearProgressIndicator(
                 value: 0.78,
-                minHeight: 10,
-                borderRadius: BorderRadius.all(Radius.circular(10)),
+                minHeight: 12,
+                borderRadius: BorderRadius.circular(8),
                 backgroundColor: Colors.white10,
-                color: Color(0xFF6C5CE7),
+                color: const Color(0xFF6C5CE7),
               ),
               const SizedBox(height: 12),
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Target: \$18,000.00', style: TextStyle(color: Colors.white60)),
-                  Text('78% Reached', style: TextStyle(color: Color(0xFFA29BFE), fontWeight: FontWeight.bold)),
-                ],
+              const Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  '78% Reached',
+                  style: TextStyle(color: Color(0xFFA29BFE), fontWeight: FontWeight.bold, fontSize: 12),
+                ),
               ),
             ],
           ),
@@ -98,13 +130,28 @@ class AdminDashboardScreen extends ConsumerWidget {
     return CustomCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 12),
-          Text(title, style: const TextStyle(color: Colors.white60, fontSize: 13)),
-          const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Icon(icon, color: color, size: 28),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 12, color: Colors.white70),
+              ),
+            ],
+          ),
         ],
       ),
     );

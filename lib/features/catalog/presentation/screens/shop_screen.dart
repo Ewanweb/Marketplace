@@ -17,49 +17,99 @@ class ShopScreen extends ConsumerStatefulWidget {
 }
 
 class _ShopScreenState extends ConsumerState<ShopScreen> {
-  String _searchQuery = '';
-  String? _selectedCategory;
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final locale = ref.watch(localeProvider);
     final langCode = locale.languageCode;
-    
+
     final productsAsync = ref.watch(productsProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
+    final selectedCategory = ref.watch(catalogCategoryFilterProvider);
+    final currentSort = ref.watch(catalogSortByProvider);
 
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CustomTextField(
-            hintText: langCode == 'ps' ? 'د توکو لټون...' : (langCode == 'prs' || langCode == 'fa' ? 'جستجوی محصولات...' : 'Search products...'),
-            labelText: langCode == 'ps' ? 'لټون' : (langCode == 'prs' || langCode == 'fa' ? 'جستجو' : 'Search'),
-            prefixIcon: Icons.search,
-            onChanged: (val) {
-              setState(() {
-                _searchQuery = val;
-              });
-            },
+          // Search Bar and Sort Dropdown Row
+          Row(
+            children: [
+              Expanded(
+                child: CustomTextField(
+                  controller: _searchController,
+                  hintText: langCode == 'ps' ? 'د توکو او محصولاتو لټون...' : (langCode == 'prs' || langCode == 'fa' ? 'جستجوی پیشرفته محصولات...' : 'Search products...'),
+                  labelText: langCode == 'ps' ? 'لټون' : (langCode == 'prs' || langCode == 'fa' ? 'جستجو' : 'Search'),
+                  prefixIcon: Icons.search,
+                  onChanged: (val) {
+                    ref.read(catalogSearchQueryProvider.notifier).state = val.trim();
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withAlpha(30)),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: currentSort,
+                    icon: const Icon(Icons.sort_rounded, color: AppColors.royalBlue),
+                    dropdownColor: const Color(0xFF1E1E2E),
+                    items: [
+                      DropdownMenuItem(
+                        value: 'newest',
+                        child: Text(langCode == 'ps' ? 'نوې توکي' : (langCode == 'prs' || langCode == 'fa' ? 'جدیدترین‌ها' : 'Newest')),
+                      ),
+                      DropdownMenuItem(
+                        value: 'rating_desc',
+                        child: Text(langCode == 'ps' ? 'تر ټولو ډیر امتیاز' : (langCode == 'prs' || langCode == 'fa' ? 'بالاترین امتیاز' : 'Highest Rated')),
+                      ),
+                      DropdownMenuItem(
+                        value: 'price_asc',
+                        child: Text(langCode == 'ps' ? 'ارزانه ته ګران' : (langCode == 'prs' || langCode == 'fa' ? 'ارزان‌ترین به گران‌ترین' : 'Price: Low to High')),
+                      ),
+                      DropdownMenuItem(
+                        value: 'price_desc',
+                        child: Text(langCode == 'ps' ? 'ګران ته ارزانه' : (langCode == 'prs' || langCode == 'fa' ? 'گران‌ترین به ارزان‌ترین' : 'Price: High to Low')),
+                      ),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) {
+                        ref.read(catalogSortByProvider.notifier).state = val;
+                      }
+                    },
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
 
           // Category Filter Chips
           categoriesAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const SizedBox(height: 40),
             error: (err, stack) => Text('Error loading categories: $err'),
             data: (categories) => SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
                   FilterChip(
-                    label: Text(langCode == 'ps' ? 'ټول' : (langCode == 'prs' || langCode == 'fa' ? 'همه' : 'All')),
-                    selected: _selectedCategory == null,
+                    label: Text(langCode == 'ps' ? 'ټول' : (langCode == 'prs' || langCode == 'fa' ? 'همه دسته‌ها' : 'All Categories')),
+                    selected: selectedCategory == null,
                     onSelected: (_) {
-                      setState(() {
-                        _selectedCategory = null;
-                      });
+                      ref.read(catalogCategoryFilterProvider.notifier).state = null;
                     },
                   ),
                   const SizedBox(width: 8),
@@ -68,11 +118,9 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                       padding: const EdgeInsets.only(right: 8),
                       child: FilterChip(
                         label: Text(cat.getName(langCode)),
-                        selected: _selectedCategory == cat.id,
+                        selected: selectedCategory == cat.id,
                         onSelected: (selected) {
-                          setState(() {
-                            _selectedCategory = selected ? cat.id : null;
-                          });
+                          ref.read(catalogCategoryFilterProvider.notifier).state = selected ? cat.id : null;
                         },
                       ),
                     );
@@ -81,27 +129,28 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Products Grid
           Expanded(
             child: productsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, stack) => Center(child: Text('Error loading products: $err')),
-              data: (allProducts) {
-                final filteredProducts = allProducts.where((p) {
-                  final matchesSearch = p.getTitle(langCode).toLowerCase().contains(_searchQuery.toLowerCase());
-                  final matchesCategory = _selectedCategory == null || p.categoryId == _selectedCategory;
-                  return matchesSearch && matchesCategory;
-                }).toList();
-
-                if (filteredProducts.isEmpty) {
+              data: (products) {
+                if (products.isEmpty) {
                   return Center(
-                    child: Text(
-                      langCode == 'ps'
-                          ? 'هیڅ توکي ونه موندل شول.'
-                          : (langCode == 'prs' || langCode == 'fa' ? 'هیچ محصولی یافت نشد.' : 'No products found.'),
-                      style: Theme.of(context).textTheme.titleLarge,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.search_off_rounded, size: 64, color: Colors.white30),
+                        const SizedBox(height: 16),
+                        Text(
+                          langCode == 'ps'
+                              ? 'هیڅ توکي ونه موندل شول.'
+                              : (langCode == 'prs' || langCode == 'fa' ? 'هیچ محصولی با این مشخصات یافت نشد.' : 'No products found.'),
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white70),
+                        ),
+                      ],
                     ),
                   );
                 }
@@ -116,9 +165,9 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                         mainAxisSpacing: 16,
                         childAspectRatio: 0.7,
                       ),
-                      itemCount: filteredProducts.length,
+                      itemCount: products.length,
                       itemBuilder: (context, index) {
-                        return _buildProductCard(context, ref, filteredProducts[index], langCode);
+                        return _buildProductCard(context, ref, products[index], langCode);
                       },
                     );
                   },
@@ -171,7 +220,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                         const Icon(Icons.star, color: AppColors.accentGold, size: 13),
                         const SizedBox(width: 4),
                         Text(
-                          '${product.rating}',
+                          '${product.rating.toStringAsFixed(1)}',
                           style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                       ],
