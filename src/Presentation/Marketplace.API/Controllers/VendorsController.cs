@@ -25,7 +25,7 @@ public class VendorsController : ApiControllerBase
     /// Retrieves vendors that the current user has access to.
     /// </summary>
     [HttpGet("mine")]
-    [HasPermission("Products.Create")] // If they can create products, they need to see their vendors
+    [Authorize]
     public async Task<IActionResult> GetMyVendors(CancellationToken cancellationToken)
     {
         var result = await Sender.Send(new GetMyVendorsQuery(), cancellationToken);
@@ -132,7 +132,69 @@ public class VendorsController : ApiControllerBase
         var result = await Sender.Send(command, cancellationToken);
         return HandleResult(result);
     }
+
+    /// <summary>
+    /// Gets members of a specific vendor shop.
+    /// </summary>
+    [HttpGet("{id:guid}/members")]
+    [Authorize]
+    public async Task<IActionResult> GetVendorMembers(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await Sender.Send(new Marketplace.Application.Vendors.Queries.GetVendorMembers.GetVendorMembersQuery(id), cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// Adds a member to a vendor shop by user email.
+    /// </summary>
+    [HttpPost("{id:guid}/members")]
+    [Authorize]
+    public async Task<IActionResult> AddVendorMember(Guid id, [FromBody] AddVendorMemberRequest request, CancellationToken cancellationToken)
+    {
+        var role = Enum.TryParse<Marketplace.Domain.Entities.VendorRole>(request.Role, true, out var parsedRole) ? parsedRole : Marketplace.Domain.Entities.VendorRole.Staff;
+        var command = new Marketplace.Application.Vendors.Commands.AddVendorMember.AddVendorMemberCommand(id, request.UserEmail, role);
+        var result = await Sender.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// Removes a member from a vendor shop.
+    /// </summary>
+    [HttpDelete("{id:guid}/members/{memberId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> RemoveVendorMember(Guid id, Guid memberId, CancellationToken cancellationToken)
+    {
+        var command = new Marketplace.Application.Vendors.Commands.RemoveVendorMember.RemoveVendorMemberCommand(id, memberId);
+        var result = await Sender.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// Gets pending vendor invitations for the logged-in user.
+    /// </summary>
+    [HttpGet("invitations")]
+    [Authorize]
+    public async Task<IActionResult> GetMyVendorInvitations(CancellationToken cancellationToken)
+    {
+        var result = await Sender.Send(new Marketplace.Application.Vendors.Queries.GetMyVendorInvitations.GetMyVendorInvitationsQuery(), cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// Responds (accept/reject) to a vendor shop invitation.
+    /// </summary>
+    [HttpPut("invitations/{memberId:guid}/respond")]
+    [Authorize]
+    public async Task<IActionResult> RespondVendorInvitation(Guid memberId, [FromBody] RespondInvitationRequest request, CancellationToken cancellationToken)
+    {
+        var command = new Marketplace.Application.Vendors.Commands.RespondVendorInvitation.RespondVendorInvitationCommand(memberId, request.Accept);
+        var result = await Sender.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
 }
+
+public record RespondInvitationRequest(bool Accept);
+public record AddVendorMemberRequest(string UserEmail, string? Role);
 
 public record RegisterVendorRequest(
     string ShopNameEn,

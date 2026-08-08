@@ -17,7 +17,9 @@ public sealed record VendorDto(
     string LogoUrl,
     string BannerUrl,
     string BankAccountInfo,
-    string KycDetailsJson);
+    string KycDetailsJson,
+    bool HasPendingUpdates,
+    string PendingUpdatesJson);
 
 public sealed record GetVendorsQuery(string? Search = null, int PageNumber = 1, int PageSize = 10) : IRequest<Result<PagedList<VendorDto>>>;
 
@@ -60,7 +62,9 @@ public sealed class GetVendorsQueryHandler : IRequestHandler<GetVendorsQuery, Re
                 v.LogoUrl,
                 v.BannerUrl,
                 v.BankAccountInfo,
-                v.KycDetailsJson))
+                v.KycDetailsJson,
+                v.HasPendingUpdates,
+                v.PendingUpdatesJson))
             .ToListAsync(cancellationToken);
 
         var pagedList = new PagedList<VendorDto>(items, totalCount, request.PageNumber, request.PageSize);

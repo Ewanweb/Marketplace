@@ -1,4 +1,5 @@
 using Marketplace.Application.Common.Interfaces;
+using Marketplace.Domain.Entities;
 using Marketplace.Shared.Results;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -47,11 +48,11 @@ public sealed class GetMyVendorsQueryHandler : IRequestHandler<GetMyVendorsQuery
         if (!_currentUserService.IsSuperAdmin)
         {
             var myVendorIds = await _dbContext.VendorMembers
-                .Where(vm => vm.UserId == _currentUserService.UserId)
+                .Where(vm => vm.UserId == _currentUserService.UserId && vm.Status == VendorMemberStatus.Accepted)
                 .Select(vm => vm.VendorId)
                 .ToListAsync(cancellationToken);
                 
-            query = query.Where(v => myVendorIds.Contains(v.Id));
+            query = query.Where(v => v.UserId == _currentUserService.UserId || myVendorIds.Contains(v.Id));
         }
 
         var vendors = await query

@@ -55,6 +55,7 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             builder.HasKey(vm => vm.Id);
             builder.HasIndex(vm => vm.UserId).IsUnique();
+            builder.Property(vm => vm.Status).HasDefaultValue(VendorMemberStatus.Accepted);
             builder.HasOne(vm => vm.Vendor).WithMany().HasForeignKey(vm => vm.VendorId).OnDelete(DeleteBehavior.Restrict);
             builder.HasOne(vm => vm.User).WithMany().HasForeignKey(vm => vm.UserId).OnDelete(DeleteBehavior.Restrict);
         });
@@ -198,6 +199,7 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
             VendorId = defaultVendorId,
             UserId = adminUserId,
             Role = VendorRole.Owner,
+            Status = VendorMemberStatus.Accepted,
             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
         });
 

@@ -6,6 +6,13 @@ public enum VendorRole
     Staff
 }
 
+public enum VendorMemberStatus
+{
+    Pending = 0,
+    Accepted = 1,
+    Rejected = 2
+}
+
 public class VendorMember
 {
     public Guid Id { get; private set; }
@@ -14,11 +21,12 @@ public class VendorMember
     public Guid UserId { get; private set; }
     public User User { get; private set; } = null!;
     public VendorRole Role { get; private set; }
+    public VendorMemberStatus Status { get; private set; } = VendorMemberStatus.Accepted;
     public DateTime CreatedAt { get; private set; }
 
     private VendorMember() { } // For EF Core
 
-    public static VendorMember Create(Guid vendorId, Guid userId, VendorRole role)
+    public static VendorMember Create(Guid vendorId, Guid userId, VendorRole role, VendorMemberStatus status = VendorMemberStatus.Accepted)
     {
         return new VendorMember
         {
@@ -26,7 +34,18 @@ public class VendorMember
             VendorId = vendorId,
             UserId = userId,
             Role = role,
+            Status = status,
             CreatedAt = DateTime.UtcNow
         };
+    }
+
+    public void Accept()
+    {
+        Status = VendorMemberStatus.Accepted;
+    }
+
+    public void Reject()
+    {
+        Status = VendorMemberStatus.Rejected;
     }
 }
