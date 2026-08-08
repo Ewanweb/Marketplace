@@ -44,7 +44,7 @@ public sealed class GetMyProfileQueryHandler : IRequestHandler<GetMyProfileQuery
 
         var vendor = await _dbContext.Vendors
             .AsNoTracking()
-            .FirstOrDefaultAsync(v => v.UserId == user.Id, cancellationToken);
+            .FirstOrDefaultAsync(v => v.UserId == user.Id && v.IsVerified, cancellationToken);
 
         var profile = new UserProfileDto(
             user.Id,

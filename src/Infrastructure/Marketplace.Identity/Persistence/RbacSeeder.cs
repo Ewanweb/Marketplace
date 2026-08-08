@@ -93,9 +93,11 @@ public static class RbacSeeder
         rolePermissions.Add(RolePermission.Create(vendorRole.Id, permissionsList.First(p => p.Code == "Products.Create").Id));
         rolePermissions.Add(RolePermission.Create(vendorRole.Id, permissionsList.First(p => p.Code == "Products.Read").Id));
         rolePermissions.Add(RolePermission.Create(vendorRole.Id, permissionsList.First(p => p.Code == "Products.Update").Id));
+        rolePermissions.Add(RolePermission.Create(vendorRole.Id, permissionsList.First(p => p.Code == "Products.Delete").Id));
         rolePermissions.Add(RolePermission.Create(vendorRole.Id, permissionsList.First(p => p.Code == "Orders.ViewOwn").Id));
         rolePermissions.Add(RolePermission.Create(vendorRole.Id, permissionsList.First(p => p.Code == "Orders.UpdateStatus").Id));
         rolePermissions.Add(RolePermission.Create(vendorRole.Id, permissionsList.First(p => p.Code == "Users.ViewProfile").Id));
+        rolePermissions.Add(RolePermission.Create(vendorRole.Id, permissionsList.First(p => p.Code == "Reports.Financial").Id));
         rolePermissions.Add(RolePermission.Create(vendorRole.Id, permissionsList.First(p => p.Code == "Reports.Invoice").Id));
         rolePermissions.Add(RolePermission.Create(vendorRole.Id, permissionsList.First(p => p.Code == "Coupons.Create").Id));
         rolePermissions.Add(RolePermission.Create(vendorRole.Id, permissionsList.First(p => p.Code == "Reviews.Read").Id));

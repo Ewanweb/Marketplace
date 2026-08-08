@@ -6,7 +6,8 @@ public enum NotificationType
     OrderStatusChanged = 2,
     NewOrderReceived = 3,
     PaymentSuccess = 4,
-    SystemAlert = 5
+    SystemAlert = 5,
+    VendorRegistration = 6
 }
 
 public class Notification

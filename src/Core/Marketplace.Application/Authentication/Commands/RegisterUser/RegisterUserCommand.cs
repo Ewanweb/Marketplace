@@ -19,7 +19,7 @@ public sealed class RegisterUserCommandValidator : AbstractValidator<RegisterUse
     public RegisterUserCommandValidator()
     {
         RuleFor(x => x.FullName)
-            .NotEmpty().WithMessage("Full Name is required.")
+            .NotEmpty().WithMessage(_ => AuthMessages.FullNameRequired)
             .MaximumLength(150);
 
         RuleFor(x => x.Email)
@@ -71,6 +71,14 @@ public sealed class RegisterUserCommandHandler : IRequestHandler<RegisterUserCom
         user.SetEmailVerificationToken(verificationToken, TimeSpan.FromHours(24));
 
         _dbContext.Users.Add(user);
+
+        var customerRole = await _dbContext.Roles.FirstOrDefaultAsync(r => r.Name == "Customer", cancellationToken);
+        if (customerRole != null)
+        {
+            var userRole = UserRole.Create(user.Id, customerRole.Id);
+            _dbContext.UserRoles.Add(userRole);
+        }
+
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         await _emailService.SendEmailVerificationAsync(user.Email, verificationToken, cancellationToken);

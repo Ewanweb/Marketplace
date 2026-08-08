@@ -9,6 +9,11 @@ public static class AuthMessages
         "کاربری با این نشانی ایمیل قبلاً ثبت‌نام کرده است.",
         "له دې ایمیل آدرس سره دمخه یو کارونکی راجستر شوی دی.");
 
+    public static string FullNameRequired => LocalizedMessage.Get(
+        "Full name is required.",
+        "نام و نام خانوادگی الزامی است.",
+        "بشپړ نوم اړین دی.");
+
     public static string InvalidCredentials => LocalizedMessage.Get(
         "Invalid email or password.",
         "ایمیل یا رمز عبور اشتباه است.",

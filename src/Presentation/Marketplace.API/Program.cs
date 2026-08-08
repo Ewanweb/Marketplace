@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using FluentValidation;
 using Marketplace.API.Authorization;
 using Marketplace.API.Middleware;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Marketplace.Application.Authentication.Commands.LoginUser;
 using Marketplace.Identity;
@@ -61,8 +62,12 @@ try
     builder.Services.AddIdentityInfrastructure(builder.Configuration);
 
     // Register MediatR & FluentValidation
-    builder.Services.AddMediatR(cfg => 
-        cfg.RegisterServicesFromAssembly(typeof(LoginCommand).Assembly));
+    builder.Services.AddMediatR(cfg =>
+    {
+        cfg.RegisterServicesFromAssembly(typeof(LoginCommand).Assembly);
+        cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(Marketplace.Application.Common.Behaviors.ValidationBehavior<,>));
+        cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(Marketplace.Application.Common.Behaviors.TransactionBehavior<,>));
+    });
     builder.Services.AddValidatorsFromAssembly(typeof(LoginCommand).Assembly);
 
     // JWT Authentication Setup

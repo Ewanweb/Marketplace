@@ -43,18 +43,30 @@ services:
       - Seq__ServerUrl=http://marketplace.seq:80
     ports:
       - "8085:8080"
+    volumes:
+      - ./uploads:/app/wwwroot/uploads
     depends_on:
       - marketplace.db
       - marketplace.redis
       - marketplace.seq
 
   marketplace.web:
-    image: nginx:alpine
+    image: nextjs-web-dev
     container_name: marketplace_web
+    build:
+      context: ../nextjs-frontend
+      dockerfile: Dockerfile.dev
     volumes:
-      - ../frontend/build/web:/usr/share/nginx/html:ro
+      - ../nextjs-frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8085/api/v1
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+    command: ["npx", "next", "dev", "-p", "3001", "-H", "0.0.0.0", "--webpack"]
     ports:
-      - "3000:80"
+      - "4000:3001"
     depends_on:
       - marketplace.api
 

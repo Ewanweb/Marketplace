@@ -24,6 +24,12 @@ public class Product
     public bool IsActive { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
+    private readonly List<ProductImage> _images = new();
+    public IReadOnlyCollection<ProductImage> Images => _images.AsReadOnly();
+
+    private readonly List<ProductAttribute> _attributes = new();
+    public IReadOnlyCollection<ProductAttribute> Attributes => _attributes.AsReadOnly();
+
     private Product() { } // For EF Core
 
     public static Product Create(
@@ -66,14 +72,32 @@ public class Product
 
     public void Update(
         string titleEn,
+        string titlePrs,
+        string titlePs,
+        string descriptionEn,
+        string descriptionPrs,
+        string descriptionPs,
         decimal price,
         int stockQuantity,
-        string imageUrl)
+        string imageUrl,
+        Guid categoryId,
+        Guid vendorId,
+        string availableSizes = "M,L",
+        string availableColors = "Default")
     {
         TitleEn = titleEn.Trim();
+        TitlePrs = titlePrs.Trim();
+        TitlePs = titlePs.Trim();
+        DescriptionEn = descriptionEn.Trim();
+        DescriptionPrs = descriptionPrs.Trim();
+        DescriptionPs = descriptionPs.Trim();
         Price = price;
         StockQuantity = stockQuantity;
         ImageUrl = imageUrl;
+        CategoryId = categoryId;
+        VendorId = vendorId;
+        AvailableSizes = availableSizes;
+        AvailableColors = availableColors;
     }
 
     public bool HasSufficientStock(int quantity) => StockQuantity >= quantity;
@@ -116,5 +140,62 @@ public class Product
         if (culture.StartsWith("ps")) return DescriptionPs;
         if (culture.StartsWith("prs") || culture.StartsWith("fa")) return DescriptionPrs;
         return DescriptionEn;
+    }
+
+    public void SetImages(IEnumerable<string>? imageUrls)
+    {
+        var urls = (imageUrls ?? Enumerable.Empty<string>())
+            .Where(u => !string.IsNullOrWhiteSpace(u))
+            .ToList();
+
+        // Remove extra images from the end
+        while (_images.Count > urls.Count)
+        {
+            _images.RemoveAt(_images.Count - 1);
+        }
+
+        // Update or Add
+        for (int i = 0; i < urls.Count; i++)
+        {
+            if (i < _images.Count)
+            {
+                _images[i].Update(urls[i], i);
+            }
+            else
+            {
+                _images.Add(ProductImage.Create(Id, urls[i], i));
+            }
+        }
+
+        if (_images.Any())
+        {
+            ImageUrl = _images.First().ImageUrl;
+        }
+    }
+
+    public void SetAttributes(IEnumerable<(string Key, string Value)>? attributes)
+    {
+        var attrs = (attributes ?? Enumerable.Empty<(string Key, string Value)>())
+            .Where(a => !string.IsNullOrWhiteSpace(a.Key) && !string.IsNullOrWhiteSpace(a.Value))
+            .ToList();
+
+        // Remove extra attributes from the end
+        while (_attributes.Count > attrs.Count)
+        {
+            _attributes.RemoveAt(_attributes.Count - 1);
+        }
+
+        // Update or Add
+        for (int i = 0; i < attrs.Count; i++)
+        {
+            if (i < _attributes.Count)
+            {
+                _attributes[i].Update(attrs[i].Key, attrs[i].Value);
+            }
+            else
+            {
+                _attributes.Add(ProductAttribute.Create(Id, attrs[i].Key, attrs[i].Value));
+            }
+        }
     }
 }

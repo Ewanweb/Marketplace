@@ -18,25 +18,59 @@ public sealed record GetAdminDashboardStatsQuery() : IRequest<Result<AdminDashbo
 public sealed class GetAdminDashboardStatsQueryHandler : IRequestHandler<GetAdminDashboardStatsQuery, Result<AdminDashboardStatsDto>>
 {
     private readonly IApplicationDbContext _dbContext;
+    private readonly ICurrentUserService _currentUserService;
 
-    public GetAdminDashboardStatsQueryHandler(IApplicationDbContext dbContext)
+    public GetAdminDashboardStatsQueryHandler(IApplicationDbContext dbContext, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
+        _currentUserService = currentUserService;
     }
 
     public async Task<Result<AdminDashboardStatsDto>> Handle(GetAdminDashboardStatsQuery request, CancellationToken cancellationToken)
     {
-        var totalRevenue = await _dbContext.Orders
-            .Where(o => o.Status != OrderStatus.Cancelled)
-            .SumAsync(o => (decimal?)o.TotalAmount, cancellationToken) ?? 14250.00m;
+        var orderItemsQuery = _dbContext.OrderItems.AsQueryable();
+        var productsQuery = _dbContext.Products.AsQueryable();
+        var customersQuery = _dbContext.Users.AsQueryable();
 
-        var activeOrdersCount = await _dbContext.Orders
-            .CountAsync(o => o.Status == OrderStatus.Processing || o.Status == OrderStatus.Pending, cancellationToken);
+        if (!_currentUserService.IsSuperAdmin)
+        {
+            var myVendorIds = await _dbContext.VendorMembers
+                .Where(vm => vm.UserId == _currentUserService.UserId)
+                .Select(vm => vm.VendorId)
+                .ToListAsync(cancellationToken);
 
-        var lowStockItemsCount = await _dbContext.Products
+            orderItemsQuery = orderItemsQuery.Where(oi => myVendorIds.Contains(oi.VendorId));
+            productsQuery = productsQuery.Where(p => myVendorIds.Contains(p.VendorId));
+            
+            // For a vendor, customers count could be approximated as distinct users who bought their items
+            var customerIds = await orderItemsQuery
+                .Where(oi => oi.Order.UserId != null)
+                .Select(oi => oi.Order.UserId!.Value)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+                
+            customersQuery = customersQuery.Where(u => customerIds.Contains(u.Id));
+        }
+
+        var totalRevenue = await orderItemsQuery
+            .Where(oi => oi.Order.Status != OrderStatus.Cancelled)
+            .SumAsync(oi => (decimal?)oi.TotalPrice, cancellationToken) ?? 0m;
+
+        if (_currentUserService.IsSuperAdmin && totalRevenue == 0m)
+        {
+            totalRevenue = 14250.00m; // Fallback for empty DB demo only for super admin
+        }
+
+        var activeOrdersCount = await orderItemsQuery
+            .Where(oi => oi.Order.Status == OrderStatus.Processing || oi.Order.Status == OrderStatus.Pending)
+            .Select(oi => oi.OrderId)
+            .Distinct()
+            .CountAsync(cancellationToken);
+
+        var lowStockItemsCount = await productsQuery
             .CountAsync(p => p.IsActive && p.StockQuantity <= 5, cancellationToken);
 
-        var totalCustomersCount = await _dbContext.Users.CountAsync(cancellationToken);
+        var totalCustomersCount = await customersQuery.CountAsync(cancellationToken);
 
         const decimal monthlyTarget = 18000.00m;
         var progressPercentage = Math.Min(100.0, (double)(totalRevenue / monthlyTarget * 100));

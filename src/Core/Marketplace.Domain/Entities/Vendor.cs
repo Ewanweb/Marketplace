@@ -16,6 +16,8 @@ public class Vendor
 
     public string LogoUrl { get; private set; } = string.Empty;
     public string BannerUrl { get; private set; } = string.Empty;
+    public string BankAccountInfo { get; private set; } = string.Empty;
+    public string KycDetailsJson { get; private set; } = string.Empty;
     
     public decimal CommissionRate { get; private set; } // e.g., 0.10 for 10%
     public bool IsVerified { get; private set; }
@@ -23,6 +25,9 @@ public class Vendor
     
     public bool IsActive { get; private set; }
     public DateTime CreatedAt { get; private set; }
+    
+    public string PendingUpdatesJson { get; private set; } = string.Empty;
+    public bool HasPendingUpdates { get; private set; }
 
     public ICollection<Product> Products { get; private set; } = new List<Product>();
 
@@ -38,6 +43,8 @@ public class Vendor
         string descriptionPs,
         string logoUrl = "",
         string bannerUrl = "",
+        string bankAccountInfo = "",
+        string kycDetailsJson = "",
         decimal commissionRate = 0.10m)
     {
         return new Vendor
@@ -52,6 +59,8 @@ public class Vendor
             DescriptionPs = descriptionPs.Trim(),
             LogoUrl = logoUrl,
             BannerUrl = bannerUrl,
+            BankAccountInfo = bankAccountInfo,
+            KycDetailsJson = kycDetailsJson,
             CommissionRate = commissionRate,
             IsVerified = false,
             Rating = 5.0,
@@ -71,6 +80,43 @@ public class Vendor
         {
             CommissionRate = newRate;
         }
+    }
+
+    public void SubmitUpdate(string pendingUpdatesJson)
+    {
+        PendingUpdatesJson = pendingUpdatesJson;
+        HasPendingUpdates = true;
+    }
+
+    public void ApproveUpdate(
+        string shopNameEn,
+        string shopNamePrs,
+        string shopNamePs,
+        string descriptionEn,
+        string descriptionPrs,
+        string descriptionPs,
+        string logoUrl,
+        string bannerUrl,
+        string bankAccountInfo)
+    {
+        ShopNameEn = shopNameEn.Trim();
+        ShopNamePrs = shopNamePrs.Trim();
+        ShopNamePs = shopNamePs.Trim();
+        DescriptionEn = descriptionEn.Trim();
+        DescriptionPrs = descriptionPrs.Trim();
+        DescriptionPs = descriptionPs.Trim();
+        LogoUrl = logoUrl;
+        BannerUrl = bannerUrl;
+        BankAccountInfo = bankAccountInfo;
+
+        PendingUpdatesJson = string.Empty;
+        HasPendingUpdates = false;
+    }
+
+    public void RejectUpdate()
+    {
+        PendingUpdatesJson = string.Empty;
+        HasPendingUpdates = false;
     }
 
     public string GetShopName(string cultureName)

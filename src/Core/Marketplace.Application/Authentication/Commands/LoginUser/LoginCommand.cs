@@ -75,12 +75,6 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, Result<L
                 "Your account is locked due to multiple failed login attempts. Please try again later."));
         }
 
-        if (!user.IsEmailConfirmed)
-        {
-            return Result.Failure<LoginResponse>(Error.Forbidden("Auth.EmailNotConfirmed",
-                "Please verify your email address before logging in."));
-        }
-
         var isPasswordValid = _passwordHasher.VerifyPassword(request.Password, user.PasswordHash);
         if (!isPasswordValid)
         {
@@ -104,7 +98,12 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, Result<L
             .Distinct()
             .ToList();
 
-        var accessToken = _jwtTokenGenerator.GenerateAccessToken(user, roles, permissions);
+        var vendorIds = await _dbContext.VendorMembers
+            .Where(vm => vm.UserId == user.Id)
+            .Select(vm => vm.VendorId)
+            .ToListAsync(cancellationToken);
+
+        var accessToken = _jwtTokenGenerator.GenerateAccessToken(user, roles, permissions, vendorIds);
         var refreshTokenValue = _jwtTokenGenerator.GenerateRefreshToken();
 
         var refreshToken = RefreshTokenEntity.Create(user.Id, refreshTokenValue, TimeSpan.FromDays(7), request.IpAddress);

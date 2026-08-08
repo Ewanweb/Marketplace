@@ -14,13 +14,17 @@ public interface IApplicationDbContext
     DbSet<AuditLog> AuditLogs { get; }
     DbSet<Category> Categories { get; }
     DbSet<Product> Products { get; }
+    DbSet<ProductImage> ProductImages { get; }
+    DbSet<ProductAttribute> ProductAttributes { get; }
     DbSet<Order> Orders { get; }
     DbSet<OrderItem> OrderItems { get; }
     DbSet<Vendor> Vendors { get; }
+    DbSet<VendorMember> VendorMembers { get; }
     DbSet<Payment> Payments { get; }
     DbSet<Review> Reviews { get; }
     DbSet<Notification> Notifications { get; }
     DbSet<Coupon> Coupons { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+    Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
 }

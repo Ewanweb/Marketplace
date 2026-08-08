@@ -13,7 +13,6 @@ public class ReviewsController : ApiControllerBase
     /// Public endpoint to get user reviews for a specific product item.
     /// </summary>
     [HttpGet("product/{productId:guid}")]
-    [HasPermission("Reviews.Read")]
     public async Task<IActionResult> GetProductReviews(Guid productId, CancellationToken cancellationToken)
     {
         var result = await Sender.Send(new GetProductReviewsQuery(productId), cancellationToken);
@@ -24,7 +23,6 @@ public class ReviewsController : ApiControllerBase
     /// Authenticated customer endpoint to submit a review and rating for a product.
     /// </summary>
     [HttpPost]
-    [HasPermission("Reviews.Create")]
     public async Task<IActionResult> CreateReview([FromBody] CreateReviewRequest request, CancellationToken cancellationToken)
     {
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);

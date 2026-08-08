@@ -18,7 +18,7 @@ public sealed class JwtTokenGenerator : IJwtTokenGenerator
         _configuration = configuration;
     }
 
-    public string GenerateAccessToken(User user, IEnumerable<string> roles, IEnumerable<string> permissions)
+    public string GenerateAccessToken(User user, IEnumerable<string> roles, IEnumerable<string> permissions, IEnumerable<Guid>? vendorIds = null)
     {
         var secretKey = _configuration["JwtSettings:SecretKey"] 
             ?? throw new InvalidOperationException("JwtSettings:SecretKey is not configured.");
@@ -44,6 +44,12 @@ public sealed class JwtTokenGenerator : IJwtTokenGenerator
         foreach (var permission in permissions)
         {
             claims.Add(new Claim("permission", permission));
+        }
+
+        if (vendorIds != null && vendorIds.Any())
+        {
+            var vendorIdsStr = string.Join(",", vendorIds);
+            claims.Add(new Claim("vendor_id", vendorIdsStr));
         }
 
         var token = new JwtSecurityToken(

@@ -17,7 +17,7 @@ public class NotificationsController : ApiControllerBase
     [HasPermission("Notifications.View")]
     public async Task<IActionResult> GetMyNotifications(CancellationToken cancellationToken)
     {
-        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
         if (!Guid.TryParse(userIdClaim, out var userId))
         {
             return Unauthorized();
@@ -34,7 +34,7 @@ public class NotificationsController : ApiControllerBase
     [HasPermission("Notifications.View")]
     public async Task<IActionResult> MarkAsRead(Guid id, CancellationToken cancellationToken)
     {
-        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
         if (!Guid.TryParse(userIdClaim, out var userId))
         {
             return Unauthorized();

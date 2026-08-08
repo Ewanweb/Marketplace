@@ -12,6 +12,7 @@ public class OrderItem
     public decimal UnitPrice { get; private set; }
     public int Quantity { get; private set; }
     public decimal TotalPrice => UnitPrice * Quantity;
+    public OrderStatus Status { get; private set; }
 
     private OrderItem() { } // For EF Core
 
@@ -24,7 +25,13 @@ public class OrderItem
             VendorId = vendorId,
             ProductTitle = productTitle,
             UnitPrice = unitPrice,
-            Quantity = quantity
+            Quantity = quantity,
+            Status = OrderStatus.Pending
         };
+    }
+
+    public void UpdateStatus(OrderStatus status)
+    {
+        Status = status;
     }
 }

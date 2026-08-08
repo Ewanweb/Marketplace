@@ -20,9 +20,12 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Product> Products => Set<Product>();
+    public DbSet<ProductImage> ProductImages => Set<ProductImage>();
+    public DbSet<ProductAttribute> ProductAttributes => Set<ProductAttribute>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<Vendor> Vendors => Set<Vendor>();
+    public DbSet<VendorMember> VendorMembers => Set<VendorMember>();
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<Notification> Notifications => Set<Notification>();
@@ -46,6 +49,35 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
             builder.Property(v => v.ShopNameEn).HasMaxLength(200).IsRequired();
             builder.Property(v => v.CommissionRate).HasPrecision(18, 4);
             builder.HasOne(v => v.User).WithMany().HasForeignKey(v => v.UserId);
+        });
+
+        modelBuilder.Entity<VendorMember>(builder =>
+        {
+            builder.HasKey(vm => vm.Id);
+            builder.HasIndex(vm => vm.UserId).IsUnique();
+            builder.HasOne(vm => vm.Vendor).WithMany().HasForeignKey(vm => vm.VendorId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne(vm => vm.User).WithMany().HasForeignKey(vm => vm.UserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Product>(builder =>
+        {
+            builder.HasKey(p => p.Id);
+            builder.Property(p => p.Price).HasPrecision(18, 2);
+            builder.HasMany(p => p.Images).WithOne(i => i.Product).HasForeignKey(i => i.ProductId).OnDelete(DeleteBehavior.Cascade);
+            builder.HasMany(p => p.Attributes).WithOne(a => a.Product).HasForeignKey(a => a.ProductId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ProductImage>(builder =>
+        {
+            builder.HasKey(pi => pi.Id);
+            builder.Property(pi => pi.ImageUrl).HasMaxLength(1000).IsRequired();
+        });
+
+        modelBuilder.Entity<ProductAttribute>(builder =>
+        {
+            builder.HasKey(pa => pa.Id);
+            builder.Property(pa => pa.Key).HasMaxLength(150).IsRequired();
+            builder.Property(pa => pa.Value).HasMaxLength(1000).IsRequired();
         });
 
         modelBuilder.Entity<Payment>(builder =>
@@ -149,10 +181,23 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
             DescriptionPs = "د نورزی بازار رسمي محصولات.",
             LogoUrl = "",
             BannerUrl = "",
+            BankAccountInfo = "AIB-99201928",
+            KycDetailsJson = "",
             CommissionRate = 0.10m,
             IsVerified = true,
             Rating = 5.0,
             IsActive = true,
+            HasPendingUpdates = false,
+            PendingUpdatesJson = string.Empty,
+            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+        });
+
+        modelBuilder.Entity<VendorMember>().HasData(new
+        {
+            Id = Guid.Parse("77777777-7777-7777-7777-777777777777"),
+            VendorId = defaultVendorId,
+            UserId = adminUserId,
+            Role = VendorRole.Owner,
             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
         });
 
@@ -229,5 +274,10 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
             builder.HasOne(i => i.Product).WithMany().HasForeignKey(i => i.ProductId);
             builder.HasOne<Vendor>().WithMany().HasForeignKey(i => i.VendorId).OnDelete(DeleteBehavior.Restrict);
         });
+    }
+
+    public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        return await Database.BeginTransactionAsync(cancellationToken);
     }
 }

@@ -13,10 +13,9 @@ public class UsersController : ApiControllerBase
     /// Authenticated endpoint to fetch the current logged-in user profile.
     /// </summary>
     [HttpGet("me")]
-    [HasPermission("Users.ViewProfile")]
     public async Task<IActionResult> GetMyProfile(CancellationToken cancellationToken)
     {
-        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
         if (!Guid.TryParse(userIdClaim, out var userId))
         {
             return Unauthorized();

@@ -17,6 +17,8 @@ public static class DependencyInjection
 
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(connectionString)
+                   .EnableSensitiveDataLogging()
+                   .LogTo(Console.WriteLine, Microsoft.Extensions.Logging.LogLevel.Information)
                    .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
         services.AddScoped<IApplicationDbContext, ApplicationDbContext>();
@@ -33,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<ITotpService, TotpService>();
         services.AddScoped<IRedisCacheService, RedisCacheService>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         return services;
     }
