@@ -60,6 +60,7 @@ try
 
     // Register Infrastructure & Application Layers
     builder.Services.AddIdentityInfrastructure(builder.Configuration);
+    builder.Services.AddScoped<Marketplace.Application.Common.Interfaces.IMarketplaceEventPublisher, Marketplace.API.Services.SignalRMarketplaceEventPublisher>();
 
     // Register MediatR & FluentValidation
     builder.Services.AddMediatR(cfg =>
@@ -175,6 +176,7 @@ try
 
     app.MapControllers();
     app.MapHub<Marketplace.API.Hubs.NotificationHub>("/hubs/notifications");
+    app.MapHub<Marketplace.API.Hubs.CatalogHub>("/hubs/catalog");
 
     app.Run();
 }

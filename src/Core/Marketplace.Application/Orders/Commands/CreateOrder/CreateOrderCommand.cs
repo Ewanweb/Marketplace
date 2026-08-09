@@ -32,10 +32,12 @@ public sealed class CreateOrderCommandValidator : AbstractValidator<CreateOrderC
 public sealed class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Result<Guid>>
 {
     private readonly IApplicationDbContext _dbContext;
+    private readonly IMarketplaceEventPublisher _eventPublisher;
 
-    public CreateOrderCommandHandler(IApplicationDbContext dbContext)
+    public CreateOrderCommandHandler(IApplicationDbContext dbContext, IMarketplaceEventPublisher eventPublisher)
     {
         _dbContext = dbContext;
+        _eventPublisher = eventPublisher;
     }
 
     public async Task<Result<Guid>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
@@ -79,6 +81,8 @@ public sealed class CreateOrderCommandHandler : IRequestHandler<CreateOrderComma
 
         _dbContext.Orders.Add(order);
         await _dbContext.SaveChangesAsync(cancellationToken);
+        
+        await _eventPublisher.PublishOrderUpdatedEvent(cancellationToken);
 
         return Result.Success(order.Id);
     }

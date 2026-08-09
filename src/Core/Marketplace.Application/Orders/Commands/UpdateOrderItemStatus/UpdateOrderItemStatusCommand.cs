@@ -25,10 +25,12 @@ public sealed class UpdateOrderItemStatusCommandValidator : AbstractValidator<Up
 public sealed class UpdateOrderItemStatusCommandHandler : IRequestHandler<UpdateOrderItemStatusCommand, Result>
 {
     private readonly IApplicationDbContext _dbContext;
+    private readonly IMarketplaceEventPublisher _eventPublisher;
 
-    public UpdateOrderItemStatusCommandHandler(IApplicationDbContext dbContext)
+    public UpdateOrderItemStatusCommandHandler(IApplicationDbContext dbContext, IMarketplaceEventPublisher eventPublisher)
     {
         _dbContext = dbContext;
+        _eventPublisher = eventPublisher;
     }
 
     public async Task<Result> Handle(UpdateOrderItemStatusCommand request, CancellationToken cancellationToken)
@@ -67,6 +69,8 @@ public sealed class UpdateOrderItemStatusCommandHandler : IRequestHandler<Update
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+        
+        await _eventPublisher.PublishOrderUpdatedEvent(cancellationToken);
 
         return Result.Success();
     }

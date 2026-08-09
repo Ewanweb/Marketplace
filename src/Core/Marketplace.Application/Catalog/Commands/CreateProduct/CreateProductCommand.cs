@@ -4,6 +4,7 @@ using Marketplace.Domain.Entities;
 using Marketplace.Shared.Results;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Marketplace.Application.Common.Interfaces;
 
 namespace Marketplace.Application.Catalog.Commands.CreateProduct;
 
@@ -43,13 +44,16 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
 {
     private readonly IApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IMarketplaceEventPublisher _eventPublisher;
 
     public CreateProductCommandHandler(
         IApplicationDbContext dbContext,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        IMarketplaceEventPublisher eventPublisher)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
+        _eventPublisher = eventPublisher;
     }
 
     public async Task<Result<Guid>> Handle(CreateProductCommand request, CancellationToken cancellationToken)
@@ -143,6 +147,8 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
 
         _dbContext.Products.Add(product);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _eventPublisher.PublishProductAddedEvent(product.Id, cancellationToken);
 
         return Result.Success(product.Id);
     }
