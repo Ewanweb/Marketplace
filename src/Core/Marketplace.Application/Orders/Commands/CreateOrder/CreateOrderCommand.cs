@@ -12,6 +12,8 @@ public sealed record CreateOrderItemRequest(Guid ProductId, int Quantity);
 public sealed record CreateOrderCommand(
     string CustomerName,
     string ShippingAddress,
+    string Phone,
+    string Email,
     List<CreateOrderItemRequest> Items,
     Guid? UserId = null) : IRequest<Result<Guid>>;
 
@@ -21,6 +23,8 @@ public sealed class CreateOrderCommandValidator : AbstractValidator<CreateOrderC
     {
         RuleFor(x => x.CustomerName).NotEmpty().MaximumLength(150);
         RuleFor(x => x.ShippingAddress).NotEmpty();
+        RuleFor(x => x.Phone).NotEmpty().MaximumLength(20);
+        RuleFor(x => x.Email).NotEmpty().EmailAddress();
         RuleForEach(x => x.Items).ChildRules(item =>
         {
             item.RuleFor(i => i.ProductId).NotEmpty();
@@ -76,6 +80,8 @@ public sealed class CreateOrderCommandHandler : IRequestHandler<CreateOrderComma
         var order = Order.Create(
             request.CustomerName,
             request.ShippingAddress,
+            request.Phone,
+            request.Email,
             orderItems,
             request.UserId);
 

@@ -56,16 +56,27 @@ public sealed class UpdateOrderItemStatusCommandHandler : IRequestHandler<Update
             .Where(oi => oi.OrderId == orderItem.OrderId)
             .ToListAsync(cancellationToken);
 
-        var allShipped = allOrderItems.All(oi => oi.Status == OrderStatus.Shipped || oi.Status == OrderStatus.Delivered);
-        var allDelivered = allOrderItems.All(oi => oi.Status == OrderStatus.Delivered);
+        var activeItems = allOrderItems.Where(oi => oi.Status != OrderStatus.Cancelled).ToList();
 
-        if (allDelivered)
+        if (allOrderItems.All(oi => oi.Status == OrderStatus.Cancelled))
+        {
+            orderItem.Order.UpdateStatus(OrderStatus.Cancelled);
+        }
+        else if (activeItems.All(oi => oi.Status == OrderStatus.Delivered))
         {
             orderItem.Order.UpdateStatus(OrderStatus.Delivered);
         }
-        else if (allShipped)
+        else if (activeItems.All(oi => oi.Status == OrderStatus.Shipped || oi.Status == OrderStatus.Delivered))
         {
             orderItem.Order.UpdateStatus(OrderStatus.Shipped);
+        }
+        else if (activeItems.All(oi => oi.Status == OrderStatus.Pending))
+        {
+            orderItem.Order.UpdateStatus(OrderStatus.Pending);
+        }
+        else
+        {
+            orderItem.Order.UpdateStatus(OrderStatus.Processing);
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);

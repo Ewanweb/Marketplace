@@ -16,6 +16,8 @@ public class Order
     public Guid? UserId { get; private set; }
     public string CustomerName { get; private set; } = string.Empty;
     public string ShippingAddress { get; private set; } = string.Empty;
+    public string Phone { get; private set; } = string.Empty;
+    public string Email { get; private set; } = string.Empty;
     public decimal TotalAmount { get; private set; }
     public OrderStatus Status { get; private set; }
     public DateTime CreatedAt { get; private set; }
@@ -27,6 +29,8 @@ public class Order
     public static Order Create(
         string customerName,
         string shippingAddress,
+        string phone,
+        string email,
         List<OrderItem> items,
         Guid? userId = null)
     {
@@ -37,6 +41,8 @@ public class Order
             UserId = userId,
             CustomerName = customerName.Trim(),
             ShippingAddress = shippingAddress.Trim(),
+            Phone = phone?.Trim() ?? string.Empty,
+            Email = email?.Trim() ?? string.Empty,
             Status = OrderStatus.Processing,
             CreatedAt = DateTime.UtcNow,
             Items = items

@@ -344,10 +344,18 @@ namespace Marketplace.Identity.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("OrderNumber")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ShippingAddress")
                         .IsRequired()
@@ -989,6 +997,9 @@ namespace Marketplace.Identity.Migrations
                     b.Property<int>("Role")
                         .HasColumnType("int");
 
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1010,6 +1021,7 @@ namespace Marketplace.Identity.Migrations
                             Id = new Guid("77777777-7777-7777-7777-777777777777"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Role = 0,
+                            Status = 1,
                             UserId = new Guid("55555555-5555-5555-5555-555555555555"),
                             VendorId = new Guid("66666666-6666-6666-6666-666666666666")
                         });
