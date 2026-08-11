@@ -54,7 +54,7 @@ public sealed class GetMyOrdersQueryHandler : IRequestHandler<GetMyOrdersQuery, 
                     i.ProductTitle,
                     i.UnitPrice,
                     i.Quantity,
-                    i.TotalPrice)).ToList()))
+                    i.UnitPrice * i.Quantity)).ToList()))
             .ToListAsync(cancellationToken);
 
         return Result.Success(orders);

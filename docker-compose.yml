@@ -10,6 +10,12 @@ services:
       - "14333:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Marketplace_SA_Pass123!' -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   marketplace.redis:
     image: redis:7-alpine
@@ -46,9 +52,12 @@ services:
     volumes:
       - ./uploads:/app/wwwroot/uploads
     depends_on:
-      - marketplace.db
-      - marketplace.redis
-      - marketplace.seq
+      marketplace.db:
+        condition: service_healthy
+      marketplace.redis:
+        condition: service_started
+      marketplace.seq:
+        condition: service_started
 
   marketplace.web:
     image: nextjs-web-dev

@@ -54,7 +54,7 @@ public sealed class GetAdminDashboardStatsQueryHandler : IRequestHandler<GetAdmi
 
         var totalRevenue = await orderItemsQuery
             .Where(oi => oi.Order.Status != OrderStatus.Cancelled)
-            .SumAsync(oi => (decimal?)oi.TotalPrice, cancellationToken) ?? 0m;
+            .SumAsync(oi => (decimal?)(oi.UnitPrice * oi.Quantity), cancellationToken) ?? 0m;
 
         if (_currentUserService.IsSuperAdmin && totalRevenue == 0m)
         {
