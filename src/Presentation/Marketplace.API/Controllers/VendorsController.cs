@@ -191,8 +191,22 @@ public class VendorsController : ApiControllerBase
         var result = await Sender.Send(command, cancellationToken);
         return HandleResult(result);
     }
+
+    /// <summary>
+    /// Authenticated endpoint to update vendor's affiliate commission rate.
+    /// </summary>
+    [HttpPut("{id:guid}/affiliate-rate")]
+    [Authorize]
+    public async Task<IActionResult> UpdateAffiliateCommissionRate(Guid id, [FromBody] UpdateAffiliateCommissionRateRequest request, CancellationToken cancellationToken)
+    {
+        // TODO: Verify if user has permission to update this vendor (Owner/Admin)
+        var command = new Marketplace.Application.Affiliates.Commands.UpdateAffiliateCommissionRateCommand(id, request.NewRate);
+        var result = await Sender.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
 }
 
+public record UpdateAffiliateCommissionRateRequest(decimal NewRate);
 public record RespondInvitationRequest(bool Accept);
 public record AddVendorMemberRequest(string UserEmail, string? Role);
 

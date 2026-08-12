@@ -56,7 +56,7 @@ namespace Marketplace.Identity.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AuditLogs");
+                    b.ToTable("AuditLogs", (string)null);
                 });
 
             modelBuilder.Entity("Marketplace.Domain.Entities.Category", b =>
@@ -100,7 +100,7 @@ namespace Marketplace.Identity.Migrations
 
                     b.HasIndex("ParentId");
 
-                    b.ToTable("Categories");
+                    b.ToTable("Categories", (string)null);
 
                     b.HasData(
                         new
@@ -263,7 +263,7 @@ namespace Marketplace.Identity.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("Coupons");
+                    b.ToTable("Coupons", (string)null);
 
                     b.HasData(
                         new
@@ -328,7 +328,7 @@ namespace Marketplace.Identity.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("Marketplace.Domain.Entities.Order", b =>
@@ -344,18 +344,10 @@ namespace Marketplace.Identity.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("OrderNumber")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Phone")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ShippingAddress")
                         .IsRequired()
@@ -373,7 +365,7 @@ namespace Marketplace.Identity.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", (string)null);
                 });
 
             modelBuilder.Entity("Marketplace.Domain.Entities.OrderItem", b =>
@@ -413,7 +405,7 @@ namespace Marketplace.Identity.Migrations
 
                     b.HasIndex("VendorId");
 
-                    b.ToTable("OrderItems");
+                    b.ToTable("OrderItems", (string)null);
                 });
 
             modelBuilder.Entity("Marketplace.Domain.Entities.Payment", b =>
@@ -463,7 +455,7 @@ namespace Marketplace.Identity.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Payments");
+                    b.ToTable("Payments", (string)null);
                 });
 
             modelBuilder.Entity("Marketplace.Domain.Entities.Permission", b =>
@@ -490,7 +482,7 @@ namespace Marketplace.Identity.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("Permissions");
+                    b.ToTable("Permissions", (string)null);
                 });
 
             modelBuilder.Entity("Marketplace.Domain.Entities.Product", b =>
@@ -564,7 +556,7 @@ namespace Marketplace.Identity.Migrations
 
                     b.HasIndex("VendorId");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
 
                     b.HasData(
                         new
@@ -632,7 +624,7 @@ namespace Marketplace.Identity.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("ProductAttributes");
+                    b.ToTable("ProductAttributes", (string)null);
                 });
 
             modelBuilder.Entity("Marketplace.Domain.Entities.ProductImage", b =>
@@ -656,7 +648,7 @@ namespace Marketplace.Identity.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("ProductImages");
+                    b.ToTable("ProductImages", (string)null);
                 });
 
             modelBuilder.Entity("Marketplace.Domain.Entities.RefreshToken", b =>
@@ -701,7 +693,7 @@ namespace Marketplace.Identity.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("Marketplace.Domain.Entities.Review", b =>
@@ -738,7 +730,7 @@ namespace Marketplace.Identity.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Reviews");
+                    b.ToTable("Reviews", (string)null);
                 });
 
             modelBuilder.Entity("Marketplace.Domain.Entities.Role", b =>
@@ -761,7 +753,7 @@ namespace Marketplace.Identity.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Roles");
+                    b.ToTable("Roles", (string)null);
                 });
 
             modelBuilder.Entity("Marketplace.Domain.Entities.RolePermission", b =>
@@ -776,7 +768,7 @@ namespace Marketplace.Identity.Migrations
 
                     b.HasIndex("PermissionId");
 
-                    b.ToTable("RolePermissions");
+                    b.ToTable("RolePermissions", (string)null);
                 });
 
             modelBuilder.Entity("Marketplace.Domain.Entities.User", b =>
@@ -848,7 +840,7 @@ namespace Marketplace.Identity.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
 
                     b.HasData(
                         new
@@ -878,7 +870,7 @@ namespace Marketplace.Identity.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("UserRoles");
+                    b.ToTable("UserRoles", (string)null);
                 });
 
             modelBuilder.Entity("Marketplace.Domain.Entities.Vendor", b =>
@@ -958,7 +950,7 @@ namespace Marketplace.Identity.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Vendors");
+                    b.ToTable("Vendors", (string)null);
 
                     b.HasData(
                         new
@@ -997,9 +989,6 @@ namespace Marketplace.Identity.Migrations
                     b.Property<int>("Role")
                         .HasColumnType("int");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1013,7 +1002,7 @@ namespace Marketplace.Identity.Migrations
 
                     b.HasIndex("VendorId");
 
-                    b.ToTable("VendorMembers");
+                    b.ToTable("VendorMembers", (string)null);
 
                     b.HasData(
                         new
@@ -1021,7 +1010,6 @@ namespace Marketplace.Identity.Migrations
                             Id = new Guid("77777777-7777-7777-7777-777777777777"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Role = 0,
-                            Status = 1,
                             UserId = new Guid("55555555-5555-5555-5555-555555555555"),
                             VendorId = new Guid("66666666-6666-6666-6666-666666666666")
                         });

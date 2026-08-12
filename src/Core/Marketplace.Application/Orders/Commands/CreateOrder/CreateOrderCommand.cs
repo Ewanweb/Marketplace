@@ -15,7 +15,8 @@ public sealed record CreateOrderCommand(
     string Phone,
     string Email,
     List<CreateOrderItemRequest> Items,
-    Guid? UserId = null) : IRequest<Result<Guid>>;
+    Guid? UserId = null,
+    string? ReferralCode = null) : IRequest<Result<Guid>>;
 
 public sealed class CreateOrderCommandValidator : AbstractValidator<CreateOrderCommand>
 {
@@ -83,10 +84,58 @@ public sealed class CreateOrderCommandHandler : IRequestHandler<CreateOrderComma
             request.Phone,
             request.Email,
             orderItems,
-            request.UserId);
+            request.UserId,
+            referrerUserId: null, // Will be set if referral code is valid
+            referralCode: request.ReferralCode);
+
+        // Process Affiliate Referral if present
+        if (!string.IsNullOrWhiteSpace(request.ReferralCode))
+        {
+            var referrer = await _dbContext.Users.FirstOrDefaultAsync(u => u.ReferralCode == request.ReferralCode && u.Id != request.UserId, cancellationToken);
+            if (referrer != null)
+            {
+                var orderTypeType = order.GetType();
+                var referrerProperty = orderTypeType.GetProperty("ReferrerUserId");
+                if (referrerProperty != null && referrerProperty.CanWrite)
+                {
+                    referrerProperty.SetValue(order, referrer.Id);
+                }
+                else
+                {
+                    // Update order entity via reflection if property is private set
+                    var field = orderTypeType.GetProperty("ReferrerUserId", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                    if (field != null)
+                    {
+                        field.DeclaringType?.GetProperty("ReferrerUserId")?.SetValue(order, referrer.Id);
+                    }
+                }
+                
+                // Fetch vendors to get their commission rates
+                var vendorIds = orderItems.Select(i => i.VendorId).Distinct().ToList();
+                var vendors = await _dbContext.Vendors.Where(v => vendorIds.Contains(v.Id)).ToDictionaryAsync(v => v.Id, cancellationToken);
+
+                foreach (var item in orderItems)
+                {
+                    if (vendors.TryGetValue(item.VendorId, out var vendor) && vendor.AffiliateCommissionRate > 0)
+                    {
+                        var referral = AffiliateReferral.Create(
+                            referrer.Id,
+                            order.Id,
+                            item.Id,
+                            item.VendorId,
+                            item.ProductId,
+                            item.TotalPrice,
+                            vendor.AffiliateCommissionRate);
+                        
+                        _dbContext.AffiliateReferrals.Add(referral);
+                    }
+                }
+            }
+        }
 
         _dbContext.Orders.Add(order);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
         
         await _eventPublisher.PublishOrderUpdatedEvent(cancellationToken);
 

@@ -20,6 +20,7 @@ public class Vendor
     public string KycDetailsJson { get; private set; } = string.Empty;
     
     public decimal CommissionRate { get; private set; } // e.g., 0.10 for 10%
+    public decimal AffiliateCommissionRate { get; private set; } // e.g., 0.05 for 5%
     public bool IsVerified { get; private set; }
     public double Rating { get; private set; }
     
@@ -45,7 +46,8 @@ public class Vendor
         string bannerUrl = "",
         string bankAccountInfo = "",
         string kycDetailsJson = "",
-        decimal commissionRate = 0.10m)
+        decimal commissionRate = 0.10m,
+        decimal affiliateCommissionRate = 0.0m)
     {
         return new Vendor
         {
@@ -62,6 +64,7 @@ public class Vendor
             BankAccountInfo = bankAccountInfo,
             KycDetailsJson = kycDetailsJson,
             CommissionRate = commissionRate,
+            AffiliateCommissionRate = affiliateCommissionRate,
             IsVerified = false,
             Rating = 5.0,
             IsActive = true,
@@ -79,6 +82,14 @@ public class Vendor
         if (newRate >= 0 && newRate <= 1)
         {
             CommissionRate = newRate;
+        }
+    }
+
+    public void UpdateAffiliateCommissionRate(decimal newRate)
+    {
+        if (newRate >= 0 && newRate <= 1)
+        {
+            AffiliateCommissionRate = newRate;
         }
     }
 

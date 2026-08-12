@@ -11,6 +11,8 @@ public class User
     public string? EmailVerificationToken { get; private set; }
     public DateTime? EmailVerificationTokenExpiresAt { get; private set; }
 
+    public string ReferralCode { get; private set; } = string.Empty;
+
     public bool IsTwoFactorEnabled { get; private set; }
     public string? TwoFactorSecret { get; private set; }
     public string? BackupCodesJson { get; private set; }
@@ -28,6 +30,7 @@ public class User
 
     public ICollection<UserRole> UserRoles { get; private set; } = new List<UserRole>();
     public ICollection<RefreshToken> RefreshTokens { get; private set; } = new List<RefreshToken>();
+    public ICollection<AffiliateReferral> AffiliateReferrals { get; private set; } = new List<AffiliateReferral>();
 
     private User() { }
 
@@ -45,8 +48,16 @@ public class User
             PasswordHash = passwordHash,
             CreatedAt = DateTime.UtcNow,
             IsActive = true,
-            IsEmailConfirmed = false
+            IsEmailConfirmed = false,
+            ReferralCode = GenerateReferralCode()
         };
+    }
+
+    private static string GenerateReferralCode()
+    {
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        var random = new Random();
+        return new string(Enumerable.Repeat(chars, 8).Select(s => s[random.Next(s.Length)]).ToArray());
     }
 
     public void ConfirmEmail()

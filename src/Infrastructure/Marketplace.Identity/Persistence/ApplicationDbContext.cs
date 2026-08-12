@@ -30,6 +30,8 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Coupon> Coupons => Set<Coupon>();
+    public DbSet<AffiliateReferral> AffiliateReferrals => Set<AffiliateReferral>();
+    public DbSet<Banner> Banners => Set<Banner>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -105,6 +107,20 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
                 new { Id = Guid.Parse("88888888-8888-8888-8888-888888888888"), Code = "WELCOME10", DiscountPercent = 0m, DiscountAmount = 10.00m, IsPercentage = false, MinOrderAmount = 20.00m, MaxDiscountAmount = 10.00m, ExpiryDate = new DateTime(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc), UsageLimit = 5000, UsedCount = 0, IsActive = true, VendorId = (Guid?)null, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
             );
         });
+        
+        modelBuilder.Entity<AffiliateReferral>(builder =>
+        {
+            builder.HasKey(a => a.Id);
+            builder.Property(a => a.OrderItemTotal).HasPrecision(18, 2);
+            builder.Property(a => a.CommissionRate).HasPrecision(18, 4);
+            builder.Property(a => a.CommissionAmount).HasPrecision(18, 2);
+            builder.HasOne(a => a.Referrer).WithMany(u => u.AffiliateReferrals).HasForeignKey(a => a.ReferrerUserId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne(a => a.Order).WithMany().HasForeignKey(a => a.OrderId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne(a => a.OrderItem).WithMany().HasForeignKey(a => a.OrderItemId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne(a => a.Vendor).WithMany().HasForeignKey(a => a.VendorId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne(a => a.Product).WithMany().HasForeignKey(a => a.ProductId).OnDelete(DeleteBehavior.Restrict);
+        });
+        
         modelBuilder.Entity<Role>(builder =>
         {
             builder.HasKey(r => r.Id);
@@ -166,6 +182,7 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
             IsLockoutEnabled = true,
             AccessFailedCount = 0,
             IsActive = true,
+            ReferralCode = "ADMIN123",
             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
         });
 
@@ -184,6 +201,7 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
             BankAccountInfo = "AIB-99201928",
             KycDetailsJson = "",
             CommissionRate = 0.10m,
+            AffiliateCommissionRate = 0.05m,
             IsVerified = true,
             Rating = 5.0,
             IsActive = true,

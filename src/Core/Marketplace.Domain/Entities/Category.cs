@@ -47,4 +47,19 @@ public class Category
         if (culture.StartsWith("prs") || culture.StartsWith("fa")) return NamePrs;
         return NameEn;
     }
+
+    public void Update(string nameEn, string namePrs, string namePs, string iconName, Guid? parentId, int level)
+    {
+        NameEn = nameEn.Trim();
+        NamePrs = namePrs.Trim();
+        NamePs = namePs.Trim();
+        IconName = iconName.Trim();
+        ParentId = parentId;
+        Level = level;
+    }
+
+    public void Deactivate()
+    {
+        IsActive = false;
+    }
 }
