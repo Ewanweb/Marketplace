@@ -21,7 +21,9 @@ public record VendorDetailDto(
     bool IsVerified,
     bool IsActive,
     bool HasPendingUpdates,
-    string PendingUpdatesJson);
+    string PendingUpdatesJson,
+    decimal CommissionRate,
+    decimal AffiliateCommissionRate);
 
 public sealed record GetMyVendorsQuery() : IRequest<Result<List<VendorDetailDto>>>;
 
@@ -72,7 +74,9 @@ public sealed class GetMyVendorsQueryHandler : IRequestHandler<GetMyVendorsQuery
                 v.IsVerified,
                 v.IsActive,
                 v.HasPendingUpdates,
-                v.PendingUpdatesJson
+                v.PendingUpdatesJson,
+                v.CommissionRate,
+                v.AffiliateCommissionRate
             ))
             .ToListAsync(cancellationToken);
 
