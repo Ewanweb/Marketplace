@@ -328,7 +328,30 @@ public sealed class GetLocalizationStringsQueryHandler : IRequestHandler<GetLoca
             ["Role_Admin"] = isPashto ? "اداره کوونکی" : (isDari ? "مدیر سیستم" : "System Admin"),
             ["Role_Vendor"] = isPashto ? "پلورونکی" : (isDari ? "فروشنده" : "Vendor"),
             ["Role_AgencyRep"] = isPashto ? "د نمایندګۍ استازی" : (isDari ? "نماینده رسمی" : "Agency Rep"),
-            ["Role_Customer"] = isPashto ? "پیرودونکی" : (isDari ? "مشتری / کاربر" : "Customer")
+            ["Role_Marketer"] = isPashto ? "بازاریاب" : (isDari ? "بازاریاب و معرف" : "Marketer"),
+            ["Role_Customer"] = isPashto ? "پیرودونکی" : (isDari ? "مشتری / کاربر" : "Customer"),
+            ["MyCustomers"] = isPashto ? "زما مشتریان او پیرودنې" : (isDari ? "مشتریان و پورسانت‌های من" : "My Customers & Referrals"),
+
+            // Cart & Checkout
+            ["OrderSummary"] = isPashto ? "د فرمایش لنډیز" : (isDari ? "خلاصه سفارش" : "Order Summary"),
+            ["Subtotal"] = isPashto ? "د توکو مجموعه" : (isDari ? "جمع اقلام" : "Subtotal"),
+            ["ShippingFee"] = isPashto ? "د لیږد لګښت" : (isDari ? "هزینه ارسال" : "Shipping Fee"),
+            ["FreeShipping"] = isPashto ? "وړیا لیږد" : (isDari ? "ارسال رایگان" : "Free Delivery"),
+            ["TotalAmount"] = isPashto ? "ټولټال د ورکړې وړ پیسې" : (isDari ? "مبلغ کل قابل پرداخت" : "Total Amount"),
+            ["PlaceOrder"] = isPashto ? "د فرمایش ثبت او نهایی کول" : (isDari ? "ثبت و پرداخت نهایی سفارش" : "Place Order Now"),
+            ["OrderSubmittedTitle"] = isPashto ? "ستاسو فرمایش په بریالیتوب سره ثبت شو!" : (isDari ? "سفارش شما با موفقیت ثبت شد!" : "Order Placed Successfully!"),
+            ["OrderSubmittedDesc"] = isPashto ? "ستاسو فرمایش تر پروسس لاندې دی او ډیر ژر به ولیږل شي." : (isDari ? "سفارش شما در مرحله پردازش قرار گرفت و به زودی ارسال خواهد شد." : "Your order is being processed and will be shipped shortly."),
+            ["ContinueShopping"] = isPashto ? "د نورو توکو پیرودل" : (isDari ? "ادامه خرید و مشاهده کالاها" : "Continue Shopping"),
+            ["EmptyCartTitle"] = isPashto ? "ستاسو د پیرودلو ټوکرۍ خالي ده" : (isDari ? "سبد خرید شما خالی است" : "Your Shopping Cart is Empty"),
+            ["EmptyCartDesc"] = isPashto ? "هغه توکي چې غواړئ دلته اضافه کړئ ترڅو وښودل شي." : (isDari ? "کالاهای مورد نظر خود را به سبد خرید اضافه کنید تا در این بخش نمایش داده شوند." : "Browse our catalog to discover and add products to your cart."),
+            ["ExploreCatalog"] = isPashto ? "د توکو لټون او پیرود" : (isDari ? "مشاهده و خرید محصولات" : "Explore Products"),
+            ["ClearCart"] = isPashto ? "ټوکرۍ خالي کول" : (isDari ? "خالی کردن سبد" : "Clear Cart"),
+            ["HaveReferralCode"] = isPashto ? "د بلنې یا تخفیف کوډ لرئ؟" : (isDari ? "کد معرف یا تخفیف دارید؟" : "Have a Referral Code?"),
+            ["ReferralApplied"] = isPashto ? "د بلنې کوډ تطبیق شو" : (isDari ? "کد معرف فعال شد" : "Referral Code Applied"),
+            ["SecureCheckoutBadge"] = isPashto ? "۱۰۰٪ خوندي او باوري پیرود" : (isDari ? "ضمانت اصالت و خرید ۱۰۰٪ امن" : "100% Secure Checkout Guarantee"),
+            ["ItemsInCart"] = isPashto ? "په ټوکرۍ کې توکي" : (isDari ? "کالا در سبد" : "items in cart"),
+            ["SizeLabel"] = isPashto ? "اندازه" : (isDari ? "سایز" : "Size"),
+            ["ColorLabel"] = isPashto ? "رنګ" : (isDari ? "رنگ" : "Color")
         };
 
         return Task.FromResult(Result.Success(strings));

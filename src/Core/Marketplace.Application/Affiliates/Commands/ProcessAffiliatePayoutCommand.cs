@@ -20,13 +20,14 @@ public sealed class ProcessAffiliatePayoutCommandHandler : IRequestHandler<Proce
     public async Task<Result<decimal>> Handle(ProcessAffiliatePayoutCommand request, CancellationToken cancellationToken)
     {
         var referrals = await _dbContext.AffiliateReferrals
-            .Where(r => r.ReferrerUserId == request.AffiliateUserId && r.Status == AffiliateStatus.Approved)
+            .Where(r => r.ReferrerUserId == request.AffiliateUserId && 
+                       (r.Status == AffiliateStatus.Approved || r.Status == AffiliateStatus.Pending))
             .ToListAsync(cancellationToken);
 
         if (referrals.Count == 0)
         {
             return Result.Failure<decimal>(Error.Validation("Payout.NoApprovedReferrals",
-                "No approved referrals found for this user to pay out."));
+                "No pending or approved referrals found for this user to pay out."));
         }
 
         var totalAmount = referrals.Sum(r => r.CommissionAmount);

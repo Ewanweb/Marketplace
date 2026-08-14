@@ -39,6 +39,56 @@ public sealed class GetMyReferralsQueryHandler : IRequestHandler<GetMyReferralsQ
             return Result.Failure<List<AffiliateReferralDto>>(Error.Unauthorized("Unauthorized", "User not logged in."));
         }
 
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (user != null)
+        {
+            var cleanCode = user.ReferralCode?.Trim().ToLower();
+            var unlinkedOrders = await _dbContext.Orders
+                .Include(o => o.Items)
+                .Where(o => (o.ReferrerUserId == userId || (!string.IsNullOrEmpty(o.ReferralCode) && o.ReferralCode.ToLower() == cleanCode))
+                         && o.UserId != userId)
+                .ToListAsync(cancellationToken);
+
+            var existingOrderItemIds = await _dbContext.AffiliateReferrals
+                .Where(r => r.ReferrerUserId == userId)
+                .Select(r => r.OrderItemId)
+                .ToListAsync(cancellationToken);
+
+            bool hasChanges = false;
+            foreach (var order in unlinkedOrders)
+            {
+                if (order.ReferrerUserId == null)
+                {
+                    order.SetReferrer(userId.Value);
+                    hasChanges = true;
+                }
+
+                foreach (var item in order.Items)
+                {
+                    if (!existingOrderItemIds.Contains(item.Id))
+                    {
+                        var refRecord = Domain.Entities.AffiliateReferral.Create(
+                            userId.Value,
+                            order.Id,
+                            item.Id,
+                            item.VendorId,
+                            item.ProductId,
+                            item.TotalPrice,
+                            0.05m);
+                        refRecord.UpdateStatus(Domain.Entities.AffiliateStatus.Approved);
+                        _dbContext.AffiliateReferrals.Add(refRecord);
+                        existingOrderItemIds.Add(item.Id);
+                        hasChanges = true;
+                    }
+                }
+            }
+
+            if (hasChanges)
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+        }
+
         var referrals = await _dbContext.AffiliateReferrals
             .Include(r => r.Product)
             .Include(r => r.Vendor)
@@ -49,8 +99,8 @@ public sealed class GetMyReferralsQueryHandler : IRequestHandler<GetMyReferralsQ
         var dtos = referrals.Select(r => new AffiliateReferralDto(
             r.Id,
             r.OrderId,
-            r.Product?.TitleEn ?? "Unknown Product",
-            r.Vendor?.ShopNameEn ?? "Unknown Vendor",
+            r.Product?.TitleEn ?? "Purchased Product",
+            r.Vendor?.ShopNameEn ?? "Store",
             r.OrderItemTotal,
             r.CommissionRate,
             r.CommissionAmount,

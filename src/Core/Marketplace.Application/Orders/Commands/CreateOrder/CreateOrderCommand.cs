@@ -101,39 +101,40 @@ public sealed class CreateOrderCommandHandler : IRequestHandler<CreateOrderComma
         // Process Affiliate Referral if present
         if (!string.IsNullOrWhiteSpace(request.ReferralCode))
         {
-            var referrer = await _dbContext.Users.FirstOrDefaultAsync(u => u.ReferralCode == request.ReferralCode && u.Id != request.UserId, cancellationToken);
+            var cleanRefCode = request.ReferralCode.Trim().ToLower();
+            var referrer = await _dbContext.Users.FirstOrDefaultAsync(
+                u => u.ReferralCode.ToLower() == cleanRefCode && u.Id != request.UserId, 
+                cancellationToken);
+
             if (referrer != null)
             {
                 order.SetReferrer(referrer.Id);
 
                 // Fetch vendors to get their commission rates
                 var vendorIds = orderItems.Select(i => i.VendorId).Distinct().ToList();
-                var vendors = await _dbContext.Vendors.Where(v => vendorIds.Contains(v.Id)).ToDictionaryAsync(v => v.Id, cancellationToken);
-
-                // Fetch marketer memberships for this referrer across the order's vendors
-                var marketerVendorIds = await _dbContext.VendorMembers
-                    .Where(vm => vm.UserId == referrer.Id 
-                              && vm.Role == VendorRole.Marketer 
-                              && vm.Status == VendorMemberStatus.Accepted
-                              && vendorIds.Contains(vm.VendorId))
-                    .Select(vm => vm.VendorId)
-                    .ToListAsync(cancellationToken);
+                var vendors = await _dbContext.Vendors
+                    .Where(v => vendorIds.Contains(v.Id))
+                    .ToDictionaryAsync(v => v.Id, cancellationToken);
 
                 foreach (var item in orderItems)
                 {
-                    if (marketerVendorIds.Contains(item.VendorId) && vendors.TryGetValue(item.VendorId, out var vendor) && vendor.AffiliateCommissionRate > 0)
+                    decimal commissionRate = 0.05m; // Default 5% referral commission
+                    if (vendors.TryGetValue(item.VendorId, out var vendor) && vendor.AffiliateCommissionRate > 0)
                     {
-                        var referral = AffiliateReferral.Create(
-                            referrer.Id,
-                            order.Id,
-                            item.Id,
-                            item.VendorId,
-                            item.ProductId,
-                            item.TotalPrice,
-                            vendor.AffiliateCommissionRate);
-                        
-                        _dbContext.AffiliateReferrals.Add(referral);
+                        commissionRate = vendor.AffiliateCommissionRate;
                     }
+
+                    var referral = AffiliateReferral.Create(
+                        referrer.Id,
+                        order.Id,
+                        item.Id,
+                        item.VendorId,
+                        item.ProductId,
+                        item.TotalPrice,
+                        commissionRate);
+                    
+                    referral.UpdateStatus(AffiliateStatus.Approved);
+                    _dbContext.AffiliateReferrals.Add(referral);
                 }
             }
         }

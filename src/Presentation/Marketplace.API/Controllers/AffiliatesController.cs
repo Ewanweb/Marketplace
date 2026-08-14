@@ -53,10 +53,10 @@ public class AffiliatesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Admin endpoint to change the status of an affiliate referral (e.g., mark as Paid).
+    /// Admin/Vendor endpoint to change the status of an affiliate referral (e.g., mark as Paid).
     /// </summary>
     [HttpPut("referrals/{id:guid}/status")]
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Roles = "SuperAdmin,Admin,Vendor")]
     public async Task<IActionResult> UpdateReferralStatus(Guid id, [FromBody] UpdateReferralStatusRequest request, CancellationToken cancellationToken)
     {
         if (!Enum.TryParse<AffiliateStatus>(request.Status, true, out var newStatus))
@@ -70,10 +70,10 @@ public class AffiliatesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Admin endpoint to get all users with approved (unpaid) affiliate commissions.
+    /// Admin/Vendor endpoint to get all users with approved (unpaid) affiliate commissions.
     /// </summary>
     [HttpGet("pending-payouts")]
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Roles = "SuperAdmin,Admin,Vendor")]
     public async Task<IActionResult> GetPendingPayouts(CancellationToken cancellationToken)
     {
         var result = await Sender.Send(new GetPendingPayoutsQuery(), cancellationToken);
@@ -81,10 +81,10 @@ public class AffiliatesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Admin endpoint to process a payout for an affiliate user — marks all Approved referrals as Paid.
+    /// Admin/Vendor endpoint to process a payout for an affiliate user — marks all Approved referrals as Paid.
     /// </summary>
     [HttpPost("payout")]
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Roles = "SuperAdmin,Admin,Vendor")]
     public async Task<IActionResult> ProcessPayout([FromBody] ProcessPayoutRequest request, CancellationToken cancellationToken)
     {
         var command = new ProcessAffiliatePayoutCommand(request.AffiliateUserId);
