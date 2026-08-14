@@ -3,7 +3,8 @@ namespace Marketplace.Domain.Entities;
 public enum VendorRole
 {
     Owner,
-    Staff
+    Staff,
+    Marketer
 }
 
 public enum VendorMemberStatus

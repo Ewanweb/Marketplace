@@ -148,23 +148,11 @@ public class Product
             .Where(u => !string.IsNullOrWhiteSpace(u))
             .ToList();
 
-        // Remove extra images from the end
-        while (_images.Count > urls.Count)
-        {
-            _images.RemoveAt(_images.Count - 1);
-        }
+        _images.Clear();
 
-        // Update or Add
         for (int i = 0; i < urls.Count; i++)
         {
-            if (i < _images.Count)
-            {
-                _images[i].Update(urls[i], i);
-            }
-            else
-            {
-                _images.Add(ProductImage.Create(Id, urls[i], i));
-            }
+            _images.Add(ProductImage.Create(Id, urls[i], i));
         }
 
         if (_images.Any())
@@ -179,23 +167,11 @@ public class Product
             .Where(a => !string.IsNullOrWhiteSpace(a.Key) && !string.IsNullOrWhiteSpace(a.Value))
             .ToList();
 
-        // Remove extra attributes from the end
-        while (_attributes.Count > attrs.Count)
-        {
-            _attributes.RemoveAt(_attributes.Count - 1);
-        }
+        _attributes.Clear();
 
-        // Update or Add
-        for (int i = 0; i < attrs.Count; i++)
+        foreach (var attr in attrs)
         {
-            if (i < _attributes.Count)
-            {
-                _attributes[i].Update(attrs[i].Key, attrs[i].Value);
-            }
-            else
-            {
-                _attributes.Add(ProductAttribute.Create(Id, attrs[i].Key, attrs[i].Value));
-            }
+            _attributes.Add(ProductAttribute.Create(Id, attr.Key, attr.Value));
         }
     }
 }

@@ -43,6 +43,7 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
             builder.HasIndex(u => u.Email).IsUnique();
             builder.Property(u => u.Email).HasMaxLength(256).IsRequired();
             builder.Property(u => u.PasswordHash).IsRequired();
+            builder.Property(u => u.Address).HasMaxLength(500);
         });
 
         modelBuilder.Entity<Vendor>(builder =>

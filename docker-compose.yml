@@ -33,13 +33,17 @@ services:
       - "5341:80"
 
   marketplace.api:
-    image: marketplace-api
+    image: marketplace-api-dev
     container_name: marketplace_api
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_URLS=http://0.0.0.0:8080
+      - DOTNET_USE_POLLING_FILE_WATCHER=1
+      - DOTNET_WATCH_RESTART_ON_RUDE_EDIT=1
       - ConnectionStrings__DefaultConnection=Server=marketplace.db,1433;Database=MarketplaceDb;User Id=sa;Password=Marketplace_SA_Pass123!;TrustServerCertificate=True;
       - ConnectionStrings__Redis=marketplace.redis:6379
       - JwtSettings__SecretKey=SuperSecretKeyForMarketplaceSecurityService2026!
@@ -50,7 +54,22 @@ services:
     ports:
       - "8085:8080"
     volumes:
-      - ./uploads:/app/wwwroot/uploads
+      - .:/app
+      - ./uploads:/app/src/Presentation/Marketplace.API/wwwroot/uploads
+      - /app/src/Presentation/Marketplace.API/bin
+      - /app/src/Presentation/Marketplace.API/obj
+      - /app/src/Core/Marketplace.Domain/bin
+      - /app/src/Core/Marketplace.Domain/obj
+      - /app/src/Core/Marketplace.Application/bin
+      - /app/src/Core/Marketplace.Application/obj
+      - /app/src/Infrastructure/Marketplace.Infrastructure/bin
+      - /app/src/Infrastructure/Marketplace.Infrastructure/obj
+      - /app/src/Infrastructure/Marketplace.Identity/bin
+      - /app/src/Infrastructure/Marketplace.Identity/obj
+      - /app/src/Infrastructure/Marketplace.Scraping/bin
+      - /app/src/Infrastructure/Marketplace.Scraping/obj
+      - /app/src/SharedKernel/Marketplace.Shared/bin
+      - /app/src/SharedKernel/Marketplace.Shared/obj
     depends_on:
       marketplace.db:
         condition: service_healthy

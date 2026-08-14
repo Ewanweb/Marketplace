@@ -50,17 +50,32 @@ try
 
     builder.Services.AddCors(options =>
     { 
+        options.AddDefaultPolicy(policy =>
+        {
+            policy.SetIsOriginAllowed(_ => true)
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials();
+        });
         options.AddPolicy("AllowAll", policy =>
         {
-            policy.AllowAnyOrigin()
+            policy.SetIsOriginAllowed(_ => true)
                   .AllowAnyMethod()
-                  .AllowAnyHeader();
+                  .AllowAnyHeader()
+                  .AllowCredentials();
         });
     });
 
     // Register Infrastructure & Application Layers
     builder.Services.AddIdentityInfrastructure(builder.Configuration);
     builder.Services.AddScoped<Marketplace.Application.Common.Interfaces.IMarketplaceEventPublisher, Marketplace.API.Services.SignalRMarketplaceEventPublisher>();
+
+    // Configure Redis Cache
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
+        options.InstanceName = "Marketplace_";
+    });
 
     // Register MediatR & FluentValidation
     builder.Services.AddMediatR(cfg =>
@@ -128,6 +143,7 @@ try
     var app = builder.Build();
 
     app.UseRequestLocalization();
+    app.UseCors("AllowAll");
 
     using (var scope = app.Services.CreateScope())
     {
@@ -151,8 +167,6 @@ try
         });
     }
 
-    app.UseCors("AllowAll");
-
     var wwwrootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
     if (!Directory.Exists(wwwrootPath))
     {
@@ -174,9 +188,9 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
-    app.MapControllers();
-    app.MapHub<Marketplace.API.Hubs.NotificationHub>("/hubs/notifications");
-    app.MapHub<Marketplace.API.Hubs.CatalogHub>("/hubs/catalog");
+    app.MapControllers().RequireCors("AllowAll");
+    app.MapHub<Marketplace.API.Hubs.NotificationHub>("/hubs/notifications").RequireCors("AllowAll");
+    app.MapHub<Marketplace.API.Hubs.CatalogHub>("/hubs/catalog").RequireCors("AllowAll");
 
     app.Run();
 }

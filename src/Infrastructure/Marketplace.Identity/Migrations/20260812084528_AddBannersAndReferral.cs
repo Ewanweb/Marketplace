@@ -18,9 +18,30 @@ namespace Marketplace.Identity.Migrations
                 nullable: false,
                 defaultValue: 0m);
 
+            migrationBuilder.AddColumn<int>(
+                name: "Status",
+                table: "VendorMembers",
+                type: "int",
+                nullable: false,
+                defaultValue: 0);
+
             migrationBuilder.AddColumn<string>(
                 name: "ReferralCode",
                 table: "Users",
+                type: "nvarchar(max)",
+                nullable: false,
+                defaultValue: "");
+
+            migrationBuilder.AddColumn<string>(
+                name: "Email",
+                table: "Orders",
+                type: "nvarchar(max)",
+                nullable: false,
+                defaultValue: "");
+
+            migrationBuilder.AddColumn<string>(
+                name: "Phone",
+                table: "Orders",
                 type: "nvarchar(max)",
                 nullable: false,
                 defaultValue: "");
@@ -62,13 +83,13 @@ namespace Marketplace.Identity.Migrations
                         column: x => x.OrderItemId,
                         principalTable: "OrderItems",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_AffiliateReferrals_Orders_OrderId",
                         column: x => x.OrderId,
                         principalTable: "Orders",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_AffiliateReferrals_Products_ProductId",
                         column: x => x.ProductId,
@@ -113,6 +134,13 @@ namespace Marketplace.Identity.Migrations
                 keyValue: new Guid("55555555-5555-5555-5555-555555555555"),
                 column: "ReferralCode",
                 value: "ADMIN123");
+
+            migrationBuilder.UpdateData(
+                table: "VendorMembers",
+                keyColumn: "Id",
+                keyValue: new Guid("77777777-7777-7777-7777-777777777777"),
+                column: "Status",
+                value: 1);
 
             migrationBuilder.UpdateData(
                 table: "Vendors",
@@ -161,8 +189,20 @@ namespace Marketplace.Identity.Migrations
                 table: "Vendors");
 
             migrationBuilder.DropColumn(
+                name: "Status",
+                table: "VendorMembers");
+
+            migrationBuilder.DropColumn(
                 name: "ReferralCode",
                 table: "Users");
+
+            migrationBuilder.DropColumn(
+                name: "Email",
+                table: "Orders");
+
+            migrationBuilder.DropColumn(
+                name: "Phone",
+                table: "Orders");
 
             migrationBuilder.DropColumn(
                 name: "ReferralCode",

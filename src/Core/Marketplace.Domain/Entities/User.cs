@@ -6,6 +6,7 @@ public class User
     public string FullName { get; private set; } = string.Empty;
     public string Email { get; private set; } = string.Empty;
     public string? PhoneNumber { get; private set; }
+    public string? Address { get; private set; }
     public string PasswordHash { get; private set; } = string.Empty;
     public bool IsEmailConfirmed { get; private set; }
     public string? EmailVerificationToken { get; private set; }
@@ -58,6 +59,14 @@ public class User
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         var random = new Random();
         return new string(Enumerable.Repeat(chars, 8).Select(s => s[random.Next(s.Length)]).ToArray());
+    }
+
+    public void UpdateProfile(string fullName, string? phoneNumber, string? address)
+    {
+        FullName = (fullName ?? string.Empty).Trim();
+        PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
+        Address = string.IsNullOrWhiteSpace(address) ? null : address.Trim();
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public void ConfirmEmail()

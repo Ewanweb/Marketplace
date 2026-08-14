@@ -31,6 +31,17 @@ public class AffiliatesController : ApiControllerBase
     }
 
     /// <summary>
+    /// Gets the list of vendors where the current user is an accepted Marketer.
+    /// </summary>
+    [HttpGet("marketer-vendors")]
+    [Authorize]
+    public async Task<IActionResult> GetMyMarketerVendors(CancellationToken cancellationToken)
+    {
+        var result = await Sender.Send(new GetMyMarketerVendorsQuery(), cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
     /// Gets the list of referrals made by the current user.
     /// </summary>
     [HttpGet("referrals")]
@@ -57,6 +68,31 @@ public class AffiliatesController : ApiControllerBase
         var result = await Sender.Send(command, cancellationToken);
         return HandleResult(result);
     }
+
+    /// <summary>
+    /// Admin endpoint to get all users with approved (unpaid) affiliate commissions.
+    /// </summary>
+    [HttpGet("pending-payouts")]
+    [Authorize(Roles = "SuperAdmin")]
+    public async Task<IActionResult> GetPendingPayouts(CancellationToken cancellationToken)
+    {
+        var result = await Sender.Send(new GetPendingPayoutsQuery(), cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// Admin endpoint to process a payout for an affiliate user — marks all Approved referrals as Paid.
+    /// </summary>
+    [HttpPost("payout")]
+    [Authorize(Roles = "SuperAdmin")]
+    public async Task<IActionResult> ProcessPayout([FromBody] ProcessPayoutRequest request, CancellationToken cancellationToken)
+    {
+        var command = new ProcessAffiliatePayoutCommand(request.AffiliateUserId);
+        var result = await Sender.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
 }
 
 public record UpdateReferralStatusRequest(string Status);
+public record ProcessPayoutRequest(Guid AffiliateUserId);
+

@@ -10,22 +10,15 @@ namespace Marketplace.Application.Orders.Commands.CreateOrder;
 public sealed record CreateOrderItemRequest(Guid ProductId, int Quantity);
 
 public sealed record CreateOrderCommand(
-    string CustomerName,
-    string ShippingAddress,
-    string Phone,
-    string Email,
     List<CreateOrderItemRequest> Items,
-    Guid? UserId = null,
+    Guid UserId,
     string? ReferralCode = null) : IRequest<Result<Guid>>;
 
 public sealed class CreateOrderCommandValidator : AbstractValidator<CreateOrderCommand>
 {
     public CreateOrderCommandValidator()
     {
-        RuleFor(x => x.CustomerName).NotEmpty().MaximumLength(150);
-        RuleFor(x => x.ShippingAddress).NotEmpty();
-        RuleFor(x => x.Phone).NotEmpty().MaximumLength(20);
-        RuleFor(x => x.Email).NotEmpty().EmailAddress();
+        RuleFor(x => x.UserId).NotEmpty();
         RuleForEach(x => x.Items).ChildRules(item =>
         {
             item.RuleFor(i => i.ProductId).NotEmpty();
@@ -78,11 +71,28 @@ public sealed class CreateOrderCommandHandler : IRequestHandler<CreateOrderComma
             return Result.Failure<Guid>(Error.Validation("Order.NoValidProducts", "No valid products found for order."));
         }
 
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
+        if (user == null)
+        {
+            return Result.Failure<Guid>(Error.NotFound("User.NotFound", "User not found."));
+        }
+
+        if (string.IsNullOrWhiteSpace(user.FullName) || 
+            string.IsNullOrWhiteSpace(user.PhoneNumber) || 
+            string.IsNullOrWhiteSpace(user.Address))
+        {
+            return Result.Failure<Guid>(Error.Validation("Profile.Incomplete", Marketplace.Shared.Localization.LocalizedMessage.Get(
+                "Please go to your profile and complete your Name, Address, and Phone Number before placing an order.",
+                "لطفاً قبل از ثبت سفارش به پروفایل خود رفته و نام، آدرس و شماره تماس خود را تکمیل کنید.",
+                "مهرباني وکړئ د فرمایش ورکولو دمخه خپل پروفایل ته لاړ شئ او خپل نوم، پته او د تلیفون شمیره بشپړه کړئ."
+            )));
+        }
+
         var order = Order.Create(
-            request.CustomerName,
-            request.ShippingAddress,
-            request.Phone,
-            request.Email,
+            user.FullName,
+            user.Address,
+            user.PhoneNumber,
+            user.Email,
             orderItems,
             request.UserId,
             referrerUserId: null, // Will be set if referral code is valid
@@ -94,29 +104,24 @@ public sealed class CreateOrderCommandHandler : IRequestHandler<CreateOrderComma
             var referrer = await _dbContext.Users.FirstOrDefaultAsync(u => u.ReferralCode == request.ReferralCode && u.Id != request.UserId, cancellationToken);
             if (referrer != null)
             {
-                var orderTypeType = order.GetType();
-                var referrerProperty = orderTypeType.GetProperty("ReferrerUserId");
-                if (referrerProperty != null && referrerProperty.CanWrite)
-                {
-                    referrerProperty.SetValue(order, referrer.Id);
-                }
-                else
-                {
-                    // Update order entity via reflection if property is private set
-                    var field = orderTypeType.GetProperty("ReferrerUserId", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                    if (field != null)
-                    {
-                        field.DeclaringType?.GetProperty("ReferrerUserId")?.SetValue(order, referrer.Id);
-                    }
-                }
-                
+                order.SetReferrer(referrer.Id);
+
                 // Fetch vendors to get their commission rates
                 var vendorIds = orderItems.Select(i => i.VendorId).Distinct().ToList();
                 var vendors = await _dbContext.Vendors.Where(v => vendorIds.Contains(v.Id)).ToDictionaryAsync(v => v.Id, cancellationToken);
 
+                // Fetch marketer memberships for this referrer across the order's vendors
+                var marketerVendorIds = await _dbContext.VendorMembers
+                    .Where(vm => vm.UserId == referrer.Id 
+                              && vm.Role == VendorRole.Marketer 
+                              && vm.Status == VendorMemberStatus.Accepted
+                              && vendorIds.Contains(vm.VendorId))
+                    .Select(vm => vm.VendorId)
+                    .ToListAsync(cancellationToken);
+
                 foreach (var item in orderItems)
                 {
-                    if (vendors.TryGetValue(item.VendorId, out var vendor) && vendor.AffiliateCommissionRate > 0)
+                    if (marketerVendorIds.Contains(item.VendorId) && vendors.TryGetValue(item.VendorId, out var vendor) && vendor.AffiliateCommissionRate > 0)
                     {
                         var referral = AffiliateReferral.Create(
                             referrer.Id,

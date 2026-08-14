@@ -3,6 +3,7 @@ using Marketplace.Application.Common.Interfaces;
 using Marketplace.Shared.Results;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 
 using Marketplace.Application.Catalog.Commands.CreateProduct;
 
@@ -43,15 +44,26 @@ public sealed record GetProductsQuery(
 public sealed class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, Result<PagedList<ProductDto>>>
 {
     private readonly IApplicationDbContext _dbContext;
+    private readonly Microsoft.Extensions.Caching.Distributed.IDistributedCache _cache;
 
-    public GetProductsQueryHandler(IApplicationDbContext dbContext)
+    public GetProductsQueryHandler(IApplicationDbContext dbContext, Microsoft.Extensions.Caching.Distributed.IDistributedCache cache)
     {
         _dbContext = dbContext;
+        _cache = cache;
     }
 
     public async Task<Result<PagedList<ProductDto>>> Handle(GetProductsQuery request, CancellationToken cancellationToken)
     {
         var culture = CultureInfo.CurrentUICulture.Name;
+        
+        var cacheKey = $"Products_{culture}_{request.PageNumber}_{request.PageSize}_{request.SearchQuery}_{request.CategoryId}_{request.VendorId}_{request.SortBy}_{request.MinPrice}_{request.MaxPrice}";
+        var cachedData = await _cache.GetStringAsync(cacheKey, cancellationToken);
+        if (!string.IsNullOrEmpty(cachedData))
+        {
+            var pagedListDto = System.Text.Json.JsonSerializer.Deserialize<PagedList<ProductDto>>(cachedData);
+            if (pagedListDto != null)
+                return Result.Success(pagedListDto);
+        }
 
         var query = _dbContext.Products
             .AsNoTracking()
@@ -132,6 +144,12 @@ public sealed class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, 
         )).ToList();
 
         var pagedList = new PagedList<ProductDto>(result, totalCount, request.PageNumber, request.PageSize);
+        
+        var cacheOptions = new Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+        };
+        await _cache.SetStringAsync(cacheKey, System.Text.Json.JsonSerializer.Serialize(pagedList), cacheOptions, cancellationToken);
 
         return Result.Success(pagedList);
     }

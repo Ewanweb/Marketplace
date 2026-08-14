@@ -80,7 +80,28 @@ public sealed class UpdateOrderItemStatusCommandHandler : IRequestHandler<Update
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
-        
+
+        // Auto-update affiliate referral statuses based on new order status
+        var newOrderStatus = orderItem.Order.Status;
+        if (newOrderStatus == OrderStatus.Delivered || newOrderStatus == OrderStatus.Cancelled)
+        {
+            var orderReferrals = await _dbContext.AffiliateReferrals
+                .Where(r => r.OrderId == orderItem.OrderId && r.Status == AffiliateStatus.Pending)
+                .ToListAsync(cancellationToken);
+
+            foreach (var referral in orderReferrals)
+            {
+                referral.UpdateStatus(newOrderStatus == OrderStatus.Delivered
+                    ? AffiliateStatus.Approved
+                    : AffiliateStatus.Cancelled);
+            }
+
+            if (orderReferrals.Count > 0)
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+        }
+
         await _eventPublisher.PublishOrderUpdatedEvent(cancellationToken);
 
         return Result.Success();

@@ -36,6 +36,17 @@ public class ProductsController : ApiControllerBase
     }
 
     /// <summary>
+    /// Retrieves a single product by its ID.
+    /// </summary>
+    [HttpGet("{id:guid}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetProductById(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await Sender.Send(new Marketplace.Application.Catalog.Queries.GetProductById.GetProductByIdQuery(id), cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
     /// Retrieves product catalog for admin/vendor dashboard, filtered by permissions.
     /// </summary>
     [HttpGet("admin")]

@@ -62,4 +62,9 @@ public class Order
     {
         Status = status;
     }
+
+    public void SetReferrer(Guid referrerUserId)
+    {
+        ReferrerUserId = referrerUserId;
+    }
 }
