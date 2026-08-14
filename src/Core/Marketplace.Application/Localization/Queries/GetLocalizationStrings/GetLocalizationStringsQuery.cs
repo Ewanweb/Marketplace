@@ -351,7 +351,20 @@ public sealed class GetLocalizationStringsQueryHandler : IRequestHandler<GetLoca
             ["SecureCheckoutBadge"] = isPashto ? "۱۰۰٪ خوندي او باوري پیرود" : (isDari ? "ضمانت اصالت و خرید ۱۰۰٪ امن" : "100% Secure Checkout Guarantee"),
             ["ItemsInCart"] = isPashto ? "په ټوکرۍ کې توکي" : (isDari ? "کالا در سبد" : "items in cart"),
             ["SizeLabel"] = isPashto ? "اندازه" : (isDari ? "سایز" : "Size"),
-            ["ColorLabel"] = isPashto ? "رنګ" : (isDari ? "رنگ" : "Color")
+            ["ColorLabel"] = isPashto ? "رنګ" : (isDari ? "رنگ" : "Color"),
+
+            // Admin Dashboard
+            ["TotalSales"] = isPashto ? "ټولټال پلور" : (isDari ? "مجموع فروش کل" : "Total Sales"),
+            ["ActiveOrders"] = isPashto ? "فعال فرمایشونه" : (isDari ? "سفارشات جاری" : "Active Orders"),
+            ["TotalCustomers"] = isPashto ? "ټول مشتریان" : (isDari ? "تعداد خریداران" : "Total Customers"),
+            ["LowStockItems"] = isPashto ? "کم پاتې توکي" : (isDari ? "کالاهای رو به اتمام" : "Low Stock Items"),
+            ["MonthlyRevenueTarget"] = isPashto ? "د میاشتني عاید هدف" : (isDari ? "هدف درآمد ماهانه" : "Monthly Revenue Target"),
+            ["PerformanceQuota"] = isPashto ? "د میاشتني هدف په وړاندې پرمختګ" : (isDari ? "پیشرفت نسبت به تارگت ماهانه" : "Performance against monthly quota"),
+            ["RecentActivity"] = isPashto ? "وروستي فعالیتونه" : (isDari ? "فعالیت‌های اخیر پلتفرم" : "Recent Platform Activity"),
+            ["TopSellingCatalog"] = isPashto ? "تر ټولو ډیر پلورل شوي توکي" : (isDari ? "پرفروش‌ترین کالاها" : "Top Selling Catalog"),
+            ["SalesCount"] = isPashto ? "د پلور شمیره" : (isDari ? "تعداد فروش" : "Sales Count"),
+            ["ManageAllProducts"] = isPashto ? "د ټولو توکو مدیریت" : (isDari ? "مدیریت و مشاهده همه محصولات" : "Manage All Products"),
+            ["NoRecentActivity"] = isPashto ? "تر اوسه هیڅ فعالیت نشته." : (isDari ? "هیچ فعالیت اخیری ثبت نشده است." : "No recent activity records found.")
         };
 
         return Task.FromResult(Result.Success(strings));
