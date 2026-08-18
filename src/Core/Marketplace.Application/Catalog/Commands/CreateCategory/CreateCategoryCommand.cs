@@ -11,15 +11,18 @@ public sealed record CreateCategoryCommand(
     string NamePrs,
     string NamePs,
     string IconName,
+    string? ImageUrl,
     Guid? ParentId) : IRequest<Result<Guid>>;
 
 public sealed class CreateCategoryCommandHandler : IRequestHandler<CreateCategoryCommand, Result<Guid>>
 {
     private readonly IApplicationDbContext _dbContext;
+    private readonly IRedisCacheService _cacheService;
 
-    public CreateCategoryCommandHandler(IApplicationDbContext dbContext)
+    public CreateCategoryCommandHandler(IApplicationDbContext dbContext, IRedisCacheService cacheService)
     {
         _dbContext = dbContext;
+        _cacheService = cacheService;
     }
 
     public async Task<Result<Guid>> Handle(CreateCategoryCommand request, CancellationToken cancellationToken)
@@ -47,11 +50,14 @@ public sealed class CreateCategoryCommandHandler : IRequestHandler<CreateCategor
             request.NamePrs,
             request.NamePs,
             request.IconName ?? string.Empty,
+            request.ImageUrl,
             request.ParentId,
             level);
 
         _dbContext.Categories.Add(category);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _cacheService.InvalidateCategoriesCacheAsync(cancellationToken);
 
         return Result.Success(category.Id);
     }

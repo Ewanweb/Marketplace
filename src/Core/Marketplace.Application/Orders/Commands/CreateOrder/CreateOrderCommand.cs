@@ -45,6 +45,14 @@ public sealed class CreateOrderCommandHandler : IRequestHandler<CreateOrderComma
             .Where(p => productIds.Contains(p.Id))
             .ToDictionaryAsync(p => p.Id, cancellationToken);
 
+        var customsFeeSetting = await _dbContext.SiteSettings.FirstOrDefaultAsync(s => s.Key == "CustomsFeeAmount", cancellationToken);
+        decimal customsFee = 0;
+        if (customsFeeSetting != null && decimal.TryParse(customsFeeSetting.Value, out var parsedFee))
+        {
+            customsFee = parsedFee;
+        }
+        var noorzaiVendorId = Guid.Parse("66666666-6666-6666-6666-666666666666");
+
         var orderItems = new List<OrderItem>();
         foreach (var itemReq in request.Items)
         {
@@ -57,11 +65,12 @@ public sealed class CreateOrderCommandHandler : IRequestHandler<CreateOrderComma
                 }
 
                 product.DecreaseStock(itemReq.Quantity);
+                var unitPrice = product.Price + (product.VendorId == noorzaiVendorId ? customsFee : 0);
                 orderItems.Add(OrderItem.Create(
                     product.Id,
                     product.VendorId,
                     product.TitleEn,
-                    product.Price,
+                    unitPrice,
                     itemReq.Quantity));
             }
         }

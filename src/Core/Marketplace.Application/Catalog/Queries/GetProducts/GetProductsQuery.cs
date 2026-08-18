@@ -29,7 +29,8 @@ public sealed record ProductDto(
     List<string> AvailableSizes,
     List<string> AvailableColors,
     List<string> ImageUrls,
-    List<ProductAttributeDto> Attributes);
+    List<ProductAttributeDto> Attributes,
+    decimal CustomsFeeAmount = 0);
 
 public sealed record GetProductsQuery(
     string? SearchQuery = null,
@@ -44,25 +45,24 @@ public sealed record GetProductsQuery(
 public sealed class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, Result<PagedList<ProductDto>>>
 {
     private readonly IApplicationDbContext _dbContext;
-    private readonly Microsoft.Extensions.Caching.Distributed.IDistributedCache _cache;
+    private readonly IRedisCacheService _cacheService;
 
-    public GetProductsQueryHandler(IApplicationDbContext dbContext, Microsoft.Extensions.Caching.Distributed.IDistributedCache cache)
+    public GetProductsQueryHandler(IApplicationDbContext dbContext, IRedisCacheService cacheService)
     {
         _dbContext = dbContext;
-        _cache = cache;
+        _cacheService = cacheService;
     }
 
     public async Task<Result<PagedList<ProductDto>>> Handle(GetProductsQuery request, CancellationToken cancellationToken)
     {
         var culture = CultureInfo.CurrentUICulture.Name;
+        var version = await _cacheService.GetProductsCacheVersionAsync(cancellationToken);
         
-        var cacheKey = $"Products_{culture}_{request.PageNumber}_{request.PageSize}_{request.SearchQuery}_{request.CategoryId}_{request.VendorId}_{request.SortBy}_{request.MinPrice}_{request.MaxPrice}";
-        var cachedData = await _cache.GetStringAsync(cacheKey, cancellationToken);
-        if (!string.IsNullOrEmpty(cachedData))
+        var cacheKey = $"Products_{culture}_v{version}_{request.PageNumber}_{request.PageSize}_{request.SearchQuery}_{request.CategoryId}_{request.VendorId}_{request.SortBy}_{request.MinPrice}_{request.MaxPrice}";
+        var cachedData = await _cacheService.GetAsync<PagedList<ProductDto>>(cacheKey, cancellationToken);
+        if (cachedData != null)
         {
-            var pagedListDto = System.Text.Json.JsonSerializer.Deserialize<PagedList<ProductDto>>(cachedData);
-            if (pagedListDto != null)
-                return Result.Success(pagedListDto);
+            return Result.Success(cachedData);
         }
 
         var query = _dbContext.Products
@@ -120,6 +120,14 @@ public sealed class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, 
             .Take(request.PageSize)
             .ToListAsync(cancellationToken);
 
+        var customsFeeSetting = await _dbContext.SiteSettings.FirstOrDefaultAsync(s => s.Key == "CustomsFeeAmount", cancellationToken);
+        decimal customsFee = 0;
+        if (customsFeeSetting != null && decimal.TryParse(customsFeeSetting.Value, out var parsedFee))
+        {
+            customsFee = parsedFee;
+        }
+        var noorzaiVendorId = Guid.Parse("66666666-6666-6666-6666-666666666666");
+
         var result = products.Select(p => new ProductDto(
             p.Id,
             p.GetTitle(culture),
@@ -140,16 +148,12 @@ public sealed class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, 
             p.AvailableSizes.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList(),
             p.AvailableColors.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(c => c.Trim()).ToList(),
             p.Images != null && p.Images.Count > 0 ? p.Images.OrderBy(i => i.DisplayOrder).Select(i => i.ImageUrl).ToList() : new List<string> { p.ImageUrl },
-            p.Attributes != null ? p.Attributes.Select(a => new ProductAttributeDto(a.Key, a.Value)).ToList() : new List<ProductAttributeDto>()
+            p.Attributes != null ? p.Attributes.Select(a => new ProductAttributeDto(a.Key, a.Value)).ToList() : new List<ProductAttributeDto>(),
+            p.VendorId == noorzaiVendorId ? customsFee : 0
         )).ToList();
 
         var pagedList = new PagedList<ProductDto>(result, totalCount, request.PageNumber, request.PageSize);
-        
-        var cacheOptions = new Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions
-        {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
-        };
-        await _cache.SetStringAsync(cacheKey, System.Text.Json.JsonSerializer.Serialize(pagedList), cacheOptions, cancellationToken);
+        await _cacheService.SetAsync(cacheKey, pagedList, TimeSpan.FromMinutes(10), cancellationToken);
 
         return Result.Success(pagedList);
     }

@@ -8,6 +8,10 @@ namespace Marketplace.Application.Affiliates.Queries;
 public record AffiliateReferralDto(
     Guid Id, 
     Guid OrderId, 
+    string OrderTrackingNumber,
+    string OrderStatus,
+    string CustomerName,
+    string CustomerEmail,
     string ProductName, 
     string VendorName, 
     decimal OrderItemTotal, 
@@ -92,6 +96,7 @@ public sealed class GetMyReferralsQueryHandler : IRequestHandler<GetMyReferralsQ
         var referrals = await _dbContext.AffiliateReferrals
             .Include(r => r.Product)
             .Include(r => r.Vendor)
+            .Include(r => r.Order)
             .Where(r => r.ReferrerUserId == userId)
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync(cancellationToken);
@@ -99,8 +104,12 @@ public sealed class GetMyReferralsQueryHandler : IRequestHandler<GetMyReferralsQ
         var dtos = referrals.Select(r => new AffiliateReferralDto(
             r.Id,
             r.OrderId,
-            r.Product?.TitleEn ?? "Purchased Product",
-            r.Vendor?.ShopNameEn ?? "Store",
+            r.Order?.OrderNumber ?? r.OrderId.ToString()[..8].ToUpperInvariant(),
+            r.Order?.Status.ToString() ?? "Processing",
+            !string.IsNullOrWhiteSpace(r.Order?.CustomerName) ? r.Order.CustomerName : "مشتری ارجاع‌شده",
+            r.Order?.Email ?? "",
+            r.Product?.TitleEn ?? "کالای خریداری شده",
+            r.Vendor?.ShopNameEn ?? "فروشگاه",
             r.OrderItemTotal,
             r.CommissionRate,
             r.CommissionAmount,

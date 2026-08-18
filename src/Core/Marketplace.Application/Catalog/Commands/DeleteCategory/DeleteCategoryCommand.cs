@@ -10,10 +10,12 @@ public sealed record DeleteCategoryCommand(Guid Id) : IRequest<Result>;
 public sealed class DeleteCategoryCommandHandler : IRequestHandler<DeleteCategoryCommand, Result>
 {
     private readonly IApplicationDbContext _dbContext;
+    private readonly IRedisCacheService _cacheService;
 
-    public DeleteCategoryCommandHandler(IApplicationDbContext dbContext)
+    public DeleteCategoryCommandHandler(IApplicationDbContext dbContext, IRedisCacheService cacheService)
     {
         _dbContext = dbContext;
+        _cacheService = cacheService;
     }
 
     public async Task<Result> Handle(DeleteCategoryCommand request, CancellationToken cancellationToken)
@@ -35,6 +37,8 @@ public sealed class DeleteCategoryCommandHandler : IRequestHandler<DeleteCategor
         category.Deactivate();
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _cacheService.InvalidateCategoriesCacheAsync(cancellationToken);
 
         return Result.Success();
     }

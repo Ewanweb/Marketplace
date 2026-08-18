@@ -7,6 +7,7 @@ public class Category
     public string NamePrs { get; private set; } = string.Empty;
     public string NamePs { get; private set; } = string.Empty;
     public string IconName { get; private set; } = string.Empty;
+    public string ImageUrl { get; private set; } = string.Empty;
     public Guid? ParentId { get; private set; }
     public int Level { get; private set; } = 1;
     public bool IsActive { get; private set; }
@@ -23,6 +24,7 @@ public class Category
         string namePrs,
         string namePs,
         string iconName,
+        string? imageUrl = null,
         Guid? parentId = null,
         int level = 1)
     {
@@ -32,7 +34,8 @@ public class Category
             NameEn = nameEn.Trim(),
             NamePrs = namePrs.Trim(),
             NamePs = namePs.Trim(),
-            IconName = iconName.Trim(),
+            IconName = (iconName ?? string.Empty).Trim(),
+            ImageUrl = (imageUrl ?? string.Empty).Trim(),
             ParentId = parentId,
             Level = level,
             IsActive = true,
@@ -48,12 +51,20 @@ public class Category
         return NameEn;
     }
 
-    public void Update(string nameEn, string namePrs, string namePs, string iconName, Guid? parentId, int level)
+    public void Update(
+        string nameEn,
+        string namePrs,
+        string namePs,
+        string iconName,
+        string? imageUrl,
+        Guid? parentId,
+        int level)
     {
         NameEn = nameEn.Trim();
         NamePrs = namePrs.Trim();
         NamePs = namePs.Trim();
-        IconName = iconName.Trim();
+        IconName = (iconName ?? string.Empty).Trim();
+        ImageUrl = (imageUrl ?? string.Empty).Trim();
         ParentId = parentId;
         Level = level;
     }

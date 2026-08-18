@@ -26,6 +26,7 @@ public interface IApplicationDbContext
     DbSet<Coupon> Coupons { get; }
     DbSet<AffiliateReferral> AffiliateReferrals { get; }
     DbSet<Banner> Banners { get; }
+    DbSet<SiteSetting> SiteSettings { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);

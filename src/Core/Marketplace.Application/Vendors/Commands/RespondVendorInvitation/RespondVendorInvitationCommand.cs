@@ -57,15 +57,27 @@ public sealed class RespondVendorInvitationCommandHandler : IRequestHandler<Resp
         {
             member.Accept();
 
-            // Assign Vendor role if missing
-            var vendorRole = await _dbContext.Roles.FirstOrDefaultAsync(r => r.Name == "Vendor", cancellationToken);
-            if (vendorRole != null)
+            // Assign proper role according to invitation (Marketer, Staff, or Vendor)
+            string targetRoleName = member.Role switch
             {
-                var userHasVendorRole = await _dbContext.UserRoles.AnyAsync(ur => ur.UserId == member.UserId && ur.RoleId == vendorRole.Id, cancellationToken);
-                if (!userHasVendorRole)
-                {
-                    _dbContext.UserRoles.Add(UserRole.Create(member.UserId, vendorRole.Id));
-                }
+                VendorRole.Marketer => "Marketer",
+                VendorRole.Staff => "Staff",
+                VendorRole.Owner => "Vendor",
+                _ => "Customer"
+            };
+
+            var targetRole = await _dbContext.Roles.FirstOrDefaultAsync(r => r.Name == targetRoleName, cancellationToken);
+            if (targetRole == null)
+            {
+                targetRole = Role.Create(targetRoleName, $"{targetRoleName} Role");
+                _dbContext.Roles.Add(targetRole);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            var userHasRole = await _dbContext.UserRoles.AnyAsync(ur => ur.UserId == member.UserId && ur.RoleId == targetRole.Id, cancellationToken);
+            if (!userHasRole)
+            {
+                _dbContext.UserRoles.Add(UserRole.Create(member.UserId, targetRole.Id));
             }
 
             // Notify shop owner

@@ -42,6 +42,17 @@ public class AffiliatesController : ApiControllerBase
     }
 
     /// <summary>
+    /// Gets the list of products for the stores the current user is a marketer for.
+    /// </summary>
+    [HttpGet("marketer-products")]
+    [Authorize]
+    public async Task<IActionResult> GetMarketerStoreProducts(CancellationToken cancellationToken)
+    {
+        var result = await Sender.Send(new GetMarketerStoreProductsQuery(), cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
     /// Gets the list of referrals made by the current user.
     /// </summary>
     [HttpGet("referrals")]
@@ -56,7 +67,7 @@ public class AffiliatesController : ApiControllerBase
     /// Admin/Vendor endpoint to change the status of an affiliate referral (e.g., mark as Paid).
     /// </summary>
     [HttpPut("referrals/{id:guid}/status")]
-    [Authorize(Roles = "SuperAdmin,Admin,Vendor")]
+    [Authorize(Roles = "SuperAdmin,Admin,Vendor,FinanceManager,AgencyRep")]
     public async Task<IActionResult> UpdateReferralStatus(Guid id, [FromBody] UpdateReferralStatusRequest request, CancellationToken cancellationToken)
     {
         if (!Enum.TryParse<AffiliateStatus>(request.Status, true, out var newStatus))
@@ -73,7 +84,7 @@ public class AffiliatesController : ApiControllerBase
     /// Admin/Vendor endpoint to get all users with approved (unpaid) affiliate commissions.
     /// </summary>
     [HttpGet("pending-payouts")]
-    [Authorize(Roles = "SuperAdmin,Admin,Vendor")]
+    [Authorize(Roles = "SuperAdmin,Admin,Vendor,FinanceManager,AgencyRep")]
     public async Task<IActionResult> GetPendingPayouts(CancellationToken cancellationToken)
     {
         var result = await Sender.Send(new GetPendingPayoutsQuery(), cancellationToken);
@@ -84,7 +95,7 @@ public class AffiliatesController : ApiControllerBase
     /// Admin/Vendor endpoint to process a payout for an affiliate user — marks all Approved referrals as Paid.
     /// </summary>
     [HttpPost("payout")]
-    [Authorize(Roles = "SuperAdmin,Admin,Vendor")]
+    [Authorize(Roles = "SuperAdmin,Admin,Vendor,FinanceManager,AgencyRep")]
     public async Task<IActionResult> ProcessPayout([FromBody] ProcessPayoutRequest request, CancellationToken cancellationToken)
     {
         var command = new ProcessAffiliatePayoutCommand(request.AffiliateUserId);

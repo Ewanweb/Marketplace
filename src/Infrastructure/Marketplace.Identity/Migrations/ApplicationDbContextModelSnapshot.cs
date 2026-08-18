@@ -164,6 +164,11 @@ namespace Marketplace.Identity.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -200,6 +205,7 @@ namespace Marketplace.Identity.Migrations
                             Id = new Guid("10000000-0000-0000-0000-000000000001"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IconName = "eco",
+                            ImageUrl = "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=500",
                             IsActive = true,
                             Level = 1,
                             NameEn = "Agricultural & Dried Fruits",
@@ -211,6 +217,7 @@ namespace Marketplace.Identity.Migrations
                             Id = new Guid("10000000-0000-0000-0000-000000000002"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IconName = "style",
+                            ImageUrl = "https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=500",
                             IsActive = true,
                             Level = 1,
                             NameEn = "Handicrafts & Rugs",
@@ -222,6 +229,7 @@ namespace Marketplace.Identity.Migrations
                             Id = new Guid("10000000-0000-0000-0000-000000000003"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IconName = "checkroom",
+                            ImageUrl = "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=500",
                             IsActive = true,
                             Level = 1,
                             NameEn = "Apparel & Textiles",
@@ -233,6 +241,7 @@ namespace Marketplace.Identity.Migrations
                             Id = new Guid("20000000-0000-0000-0000-000000000001"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IconName = "local_florist",
+                            ImageUrl = "https://images.unsplash.com/photo-1509358271058-acd22cc93898?w=500",
                             IsActive = true,
                             Level = 2,
                             NameEn = "Saffron & Spices",
@@ -245,6 +254,7 @@ namespace Marketplace.Identity.Migrations
                             Id = new Guid("20000000-0000-0000-0000-000000000002"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IconName = "grain",
+                            ImageUrl = "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=500",
                             IsActive = true,
                             Level = 2,
                             NameEn = "Nuts & Almonds",
@@ -257,6 +267,7 @@ namespace Marketplace.Identity.Migrations
                             Id = new Guid("20000000-0000-0000-0000-000000000003"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IconName = "square_foot",
+                            ImageUrl = "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=500",
                             IsActive = true,
                             Level = 2,
                             NameEn = "Handwoven Carpets",
@@ -269,6 +280,7 @@ namespace Marketplace.Identity.Migrations
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IconName = "star",
+                            ImageUrl = "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=500",
                             IsActive = true,
                             Level = 3,
                             NameEn = "Super Sargol Saffron",
@@ -281,6 +293,7 @@ namespace Marketplace.Identity.Migrations
                             Id = new Guid("11111111-1111-1111-1111-222222222222"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IconName = "verified",
+                            ImageUrl = "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=500",
                             IsActive = true,
                             Level = 3,
                             NameEn = "Export Pushal Saffron",
@@ -293,6 +306,7 @@ namespace Marketplace.Identity.Migrations
                             Id = new Guid("22222222-2222-2222-2222-222222222222"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IconName = "grade",
+                            ImageUrl = "https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=500",
                             IsActive = true,
                             Level = 3,
                             NameEn = "Herat Silk Rugs",
@@ -875,6 +889,41 @@ namespace Marketplace.Identity.Migrations
                     b.HasIndex("PermissionId");
 
                     b.ToTable("RolePermissions");
+                });
+
+            modelBuilder.Entity("Marketplace.Domain.Entities.SiteSetting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("SiteSettings");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("99999999-9999-9999-9999-999999999999"),
+                            Key = "CustomsFeeAmount",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "0"
+                        });
                 });
 
             modelBuilder.Entity("Marketplace.Domain.Entities.User", b =>

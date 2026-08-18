@@ -32,6 +32,7 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Coupon> Coupons => Set<Coupon>();
     public DbSet<AffiliateReferral> AffiliateReferrals => Set<AffiliateReferral>();
     public DbSet<Banner> Banners => Set<Banner>();
+    public DbSet<SiteSetting> SiteSettings => Set<SiteSetting>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -163,6 +164,24 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
             builder.Property(a => a.Action).HasMaxLength(100).IsRequired();
         });
 
+        modelBuilder.Entity<SiteSetting>(builder =>
+        {
+            builder.HasKey(s => s.Id);
+            builder.Property(s => s.Key).HasMaxLength(100).IsRequired();
+            builder.HasIndex(s => s.Key).IsUnique();
+        });
+
+        // Seed SiteSettings
+        modelBuilder.Entity<SiteSetting>().HasData(
+            new
+            {
+                Id = Guid.Parse("99999999-9999-9999-9999-999999999999"),
+                Key = "CustomsFeeAmount",
+                Value = "0",
+                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            }
+        );
+
         var catSpicesId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var catCarpetsId = Guid.Parse("22222222-2222-2222-2222-222222222222");
         var catClothingId = Guid.Parse("33333333-3333-3333-3333-333333333333");
@@ -228,6 +247,7 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
             builder.Property(c => c.NameEn).HasMaxLength(150).IsRequired();
             builder.Property(c => c.NamePrs).HasMaxLength(150).IsRequired();
             builder.Property(c => c.NamePs).HasMaxLength(150).IsRequired();
+            builder.Property(c => c.ImageUrl).HasMaxLength(1000);
 
             builder.HasOne(c => c.Parent)
                    .WithMany(c => c.SubCategories)
@@ -249,19 +269,19 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
 
             builder.HasData(
                 // Level 1: Main Categories
-                new { Id = catAgriId, NameEn = "Agricultural & Dried Fruits", NamePrs = "محصولات کشاورزی و خشکبار", NamePs = "کرنیز او وچه میوه جات", IconName = "eco", ParentId = (Guid?)null, Level = 1, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new { Id = catHandicraftsId, NameEn = "Handicrafts & Rugs", NamePrs = "صنایع دستی و فرش", NamePs = "لاسي صنایع او غالۍ", IconName = "style", ParentId = (Guid?)null, Level = 1, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new { Id = catApparelId, NameEn = "Apparel & Textiles", NamePrs = "پوشاک و منسوجات", NamePs = "کالي او ټوکران", IconName = "checkroom", ParentId = (Guid?)null, Level = 1, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = catAgriId, NameEn = "Agricultural & Dried Fruits", NamePrs = "محصولات کشاورزی و خشکبار", NamePs = "کرنیز او وچه میوه جات", IconName = "eco", ImageUrl = "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=500", ParentId = (Guid?)null, Level = 1, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = catHandicraftsId, NameEn = "Handicrafts & Rugs", NamePrs = "صنایع دستی و فرش", NamePs = "لاسي صنایع او غالۍ", IconName = "style", ImageUrl = "https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=500", ParentId = (Guid?)null, Level = 1, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = catApparelId, NameEn = "Apparel & Textiles", NamePrs = "پوشاک و منسوجات", NamePs = "کالي او ټوکران", IconName = "checkroom", ImageUrl = "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=500", ParentId = (Guid?)null, Level = 1, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
 
                 // Level 2: Sub Categories
-                new { Id = catSaffronGroup, NameEn = "Saffron & Spices", NamePrs = "زعفران و ادویه‌جات اعلا", NamePs = "زعفران او اعلی مصالحې", IconName = "local_florist", ParentId = (Guid?)catAgriId, Level = 2, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new { Id = catNutsGroup, NameEn = "Nuts & Almonds", NamePrs = "خشکبار، پسته و بادام", NamePs = "وچه میوه، پسته او بادام", IconName = "grain", ParentId = (Guid?)catAgriId, Level = 2, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new { Id = catCarpetsGroup, NameEn = "Handwoven Carpets", NamePrs = "قالین‌های دستبافت افغانی", NamePs = "د افغانستان لاسي غالۍ", IconName = "square_foot", ParentId = (Guid?)catHandicraftsId, Level = 2, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = catSaffronGroup, NameEn = "Saffron & Spices", NamePrs = "زعفران و ادویه‌جات اعلا", NamePs = "زعفران او اعلی مصالحې", IconName = "local_florist", ImageUrl = "https://images.unsplash.com/photo-1509358271058-acd22cc93898?w=500", ParentId = (Guid?)catAgriId, Level = 2, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = catNutsGroup, NameEn = "Nuts & Almonds", NamePrs = "خشکبار، پسته و بادام", NamePs = "وچه میوه، پسته او بادام", IconName = "grain", ImageUrl = "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=500", ParentId = (Guid?)catAgriId, Level = 2, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = catCarpetsGroup, NameEn = "Handwoven Carpets", NamePrs = "قالین‌های دستبافت افغانی", NamePs = "د افغانستان لاسي غالۍ", IconName = "square_foot", ImageUrl = "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=500", ParentId = (Guid?)catHandicraftsId, Level = 2, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
 
                 // Level 3: Leaf Categories
-                new { Id = catSuperSargol, NameEn = "Super Sargol Saffron", NamePrs = "زعفران ممتاز سرگل هرات", NamePs = "د هرات ممتاز سرګل زعفران", IconName = "star", ParentId = (Guid?)catSaffronGroup, Level = 3, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new { Id = catPushalSaffron, NameEn = "Export Pushal Saffron", NamePrs = "زعفران پوشال صادراتی", NamePs = "صادراتي پوښال زعفران", IconName = "verified", ParentId = (Guid?)catSaffronGroup, Level = 3, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new { Id = catSilkCarpet, NameEn = "Herat Silk Rugs", NamePrs = "قالیچه ابریشمی ممتاز هرات", NamePs = "د هرات ممتاز ورېښمینې غالۍ", IconName = "grade", ParentId = (Guid?)catCarpetsGroup, Level = 3, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+                new { Id = catSuperSargol, NameEn = "Super Sargol Saffron", NamePrs = "زعفران ممتاز سرگل هرات", NamePs = "د هرات ممتاز سرګل زعفران", IconName = "star", ImageUrl = "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=500", ParentId = (Guid?)catSaffronGroup, Level = 3, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = catPushalSaffron, NameEn = "Export Pushal Saffron", NamePrs = "زعفران پوشال صادراتی", NamePs = "صادراتي پوښال زعفران", IconName = "verified", ImageUrl = "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=500", ParentId = (Guid?)catSaffronGroup, Level = 3, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new { Id = catSilkCarpet, NameEn = "Herat Silk Rugs", NamePrs = "قالیچه ابریشمی ممتاز هرات", NamePs = "د هرات ممتاز ورېښمینې غالۍ", IconName = "grade", ImageUrl = "https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=500", ParentId = (Guid?)catCarpetsGroup, Level = 3, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
             );
         });
 

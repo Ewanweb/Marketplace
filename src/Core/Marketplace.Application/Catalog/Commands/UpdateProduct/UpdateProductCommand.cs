@@ -44,13 +44,16 @@ public sealed class UpdateProductCommandHandler : IRequestHandler<UpdateProductC
 {
     private readonly IApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IRedisCacheService _cacheService;
 
     public UpdateProductCommandHandler(
         IApplicationDbContext dbContext,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        IRedisCacheService cacheService)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
+        _cacheService = cacheService;
     }
 
     public async Task<Result> Handle(UpdateProductCommand request, CancellationToken cancellationToken)
@@ -142,6 +145,8 @@ public sealed class UpdateProductCommandHandler : IRequestHandler<UpdateProductC
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _cacheService.InvalidateProductsCacheAsync(cancellationToken);
 
         return Result.Success();
     }

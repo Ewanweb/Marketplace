@@ -47,6 +47,14 @@ public sealed class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQ
             return Result.Failure<ProductDto>(Error.NotFound("Product.NotFound", "The requested product was not found."));
         }
 
+        var customsFeeSetting = await _dbContext.SiteSettings.FirstOrDefaultAsync(s => s.Key == "CustomsFeeAmount", cancellationToken);
+        decimal customsFee = 0;
+        if (customsFeeSetting != null && decimal.TryParse(customsFeeSetting.Value, out var parsedFee))
+        {
+            customsFee = parsedFee;
+        }
+        var noorzaiVendorId = Guid.Parse("66666666-6666-6666-6666-666666666666");
+
         var result = new ProductDto(
             p.Id,
             p.GetTitle(culture),
@@ -67,7 +75,8 @@ public sealed class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQ
             p.AvailableSizes.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList(),
             p.AvailableColors.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(c => c.Trim()).ToList(),
             p.Images != null && p.Images.Count > 0 ? p.Images.OrderBy(i => i.DisplayOrder).Select(i => i.ImageUrl).ToList() : new List<string> { p.ImageUrl },
-            p.Attributes != null ? p.Attributes.Select(a => new ProductAttributeDto(a.Key, a.Value)).ToList() : new List<ProductAttributeDto>()
+            p.Attributes != null ? p.Attributes.Select(a => new ProductAttributeDto(a.Key, a.Value)).ToList() : new List<ProductAttributeDto>(),
+            p.VendorId == noorzaiVendorId ? customsFee : 0
         );
 
         var cacheOptions = new Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions

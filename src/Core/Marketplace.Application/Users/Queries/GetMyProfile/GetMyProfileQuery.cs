@@ -47,6 +47,35 @@ public sealed class GetMyProfileQueryHandler : IRequestHandler<GetMyProfileQuery
             .AsNoTracking()
             .FirstOrDefaultAsync(v => v.UserId == user.Id && v.IsVerified, cancellationToken);
 
+        var memberRecord = await _dbContext.VendorMembers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(vm => vm.UserId == user.Id && vm.Status == Domain.Entities.VendorMemberStatus.Accepted, cancellationToken);
+
+        Guid? activeManagedVendorId = null;
+
+        if (vendor != null)
+        {
+            activeManagedVendorId = vendor.Id;
+            if (!roles.Contains("Vendor")) roles.Add("Vendor");
+        }
+        else if (memberRecord != null)
+        {
+            if (memberRecord.Role == Domain.Entities.VendorRole.Owner)
+            {
+                activeManagedVendorId = memberRecord.VendorId;
+                if (!roles.Contains("Vendor")) roles.Add("Vendor");
+            }
+            else if (memberRecord.Role == Domain.Entities.VendorRole.Staff)
+            {
+                activeManagedVendorId = memberRecord.VendorId;
+                if (!roles.Contains("Staff")) roles.Add("Staff");
+            }
+            else if (memberRecord.Role == Domain.Entities.VendorRole.Marketer)
+            {
+                if (!roles.Contains("Marketer")) roles.Add("Marketer");
+            }
+        }
+
         var profile = new UserProfileDto(
             user.Id,
             user.Email,
@@ -56,7 +85,7 @@ public sealed class GetMyProfileQueryHandler : IRequestHandler<GetMyProfileQuery
             user.IsEmailConfirmed,
             user.IsTwoFactorEnabled,
             roles,
-            vendor?.Id);
+            activeManagedVendorId);
 
         return Result.Success(profile);
     }

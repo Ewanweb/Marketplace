@@ -52,7 +52,7 @@ services:
       - JwtSettings__ExpiryMinutes=15
       - Seq__ServerUrl=http://marketplace.seq:80
     ports:
-      - "8085:8080"
+      - "5050:8080"
     volumes:
       - .:/app
       - ./uploads:/app/src/Presentation/Marketplace.API/wwwroot/uploads
@@ -89,12 +89,12 @@ services:
       - /app/node_modules
       - /app/.next
     environment:
-      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8085/api/v1
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:5050/api/v1
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
     command: ["npx", "next", "dev", "-p", "3001", "-H", "0.0.0.0", "--webpack"]
     ports:
-      - "4000:3001"
+      - "3000:3001"
     depends_on:
       - marketplace.api
 

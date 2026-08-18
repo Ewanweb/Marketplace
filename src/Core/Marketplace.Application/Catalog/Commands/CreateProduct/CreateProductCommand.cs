@@ -4,7 +4,6 @@ using Marketplace.Domain.Entities;
 using Marketplace.Shared.Results;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Marketplace.Application.Common.Interfaces;
 
 namespace Marketplace.Application.Catalog.Commands.CreateProduct;
 
@@ -45,15 +44,18 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
     private readonly IApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
     private readonly IMarketplaceEventPublisher _eventPublisher;
+    private readonly IRedisCacheService _cacheService;
 
     public CreateProductCommandHandler(
         IApplicationDbContext dbContext,
         ICurrentUserService currentUserService,
-        IMarketplaceEventPublisher eventPublisher)
+        IMarketplaceEventPublisher eventPublisher,
+        IRedisCacheService cacheService)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
         _eventPublisher = eventPublisher;
+        _cacheService = cacheService;
     }
 
     public async Task<Result<Guid>> Handle(CreateProductCommand request, CancellationToken cancellationToken)
@@ -62,7 +64,7 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
         if (targetVendorId == Guid.Empty)
         {
             var myVendorId = await _dbContext.Vendors
-                .Where(v => v.UserId == _currentUserService.UserId && v.IsVerified)
+                .Where(v => v.UserId == _currentUserService.UserId)
                 .Select(v => v.Id)
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -106,7 +108,7 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
             if (!isMember)
             {
                 var isOwner = await _dbContext.Vendors
-                    .AnyAsync(v => v.Id == targetVendorId && v.UserId == _currentUserService.UserId && v.IsVerified, cancellationToken);
+                    .AnyAsync(v => v.Id == targetVendorId && v.UserId == _currentUserService.UserId, cancellationToken);
 
                 if (!isOwner)
                 {
@@ -148,6 +150,7 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
         _dbContext.Products.Add(product);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        await _cacheService.InvalidateProductsCacheAsync(cancellationToken);
         await _eventPublisher.PublishProductAddedEvent(product.Id, cancellationToken);
 
         return Result.Success(product.Id);

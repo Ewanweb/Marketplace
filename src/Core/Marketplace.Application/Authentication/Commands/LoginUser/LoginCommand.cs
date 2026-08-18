@@ -98,12 +98,39 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, Result<L
             .Distinct()
             .ToList();
 
-        var vendorIds = await _dbContext.VendorMembers
-            .Where(vm => vm.UserId == user.Id)
-            .Select(vm => vm.VendorId)
+        // Include vendor IDs where user is verified owner or staff member
+        var ownedVendorIds = await _dbContext.Vendors
+            .Where(v => v.UserId == user.Id && v.IsVerified)
+            .Select(v => v.Id)
             .ToListAsync(cancellationToken);
 
-        var accessToken = _jwtTokenGenerator.GenerateAccessToken(user, roles, permissions, vendorIds);
+        var memberRecords = await _dbContext.VendorMembers
+            .Where(vm => vm.UserId == user.Id && vm.Status == Domain.Entities.VendorMemberStatus.Accepted)
+            .ToListAsync(cancellationToken);
+
+        var staffOrOwnerVendorIds = memberRecords
+            .Where(vm => vm.Role == Domain.Entities.VendorRole.Owner || vm.Role == Domain.Entities.VendorRole.Staff)
+            .Select(vm => vm.VendorId)
+            .ToList();
+
+        if (ownedVendorIds.Count > 0 || memberRecords.Any(vm => vm.Role == Domain.Entities.VendorRole.Owner))
+        {
+            if (!roles.Contains("Vendor")) roles.Add("Vendor");
+        }
+
+        if (memberRecords.Any(vm => vm.Role == Domain.Entities.VendorRole.Staff))
+        {
+            if (!roles.Contains("Staff")) roles.Add("Staff");
+        }
+
+        if (memberRecords.Any(vm => vm.Role == Domain.Entities.VendorRole.Marketer))
+        {
+            if (!roles.Contains("Marketer")) roles.Add("Marketer");
+        }
+
+        var allVendorIds = ownedVendorIds.Union(staffOrOwnerVendorIds).Distinct().ToList();
+
+        var accessToken = _jwtTokenGenerator.GenerateAccessToken(user, roles, permissions, allVendorIds);
         var refreshTokenValue = _jwtTokenGenerator.GenerateRefreshToken();
 
         var refreshToken = RefreshTokenEntity.Create(user.Id, refreshTokenValue, TimeSpan.FromDays(7), request.IpAddress);

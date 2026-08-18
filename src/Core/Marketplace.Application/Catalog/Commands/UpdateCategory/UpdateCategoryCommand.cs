@@ -11,15 +11,18 @@ public sealed record UpdateCategoryCommand(
     string NamePrs,
     string NamePs,
     string IconName,
+    string? ImageUrl,
     Guid? ParentId) : IRequest<Result>;
 
 public sealed class UpdateCategoryCommandHandler : IRequestHandler<UpdateCategoryCommand, Result>
 {
     private readonly IApplicationDbContext _dbContext;
+    private readonly IRedisCacheService _cacheService;
 
-    public UpdateCategoryCommandHandler(IApplicationDbContext dbContext)
+    public UpdateCategoryCommandHandler(IApplicationDbContext dbContext, IRedisCacheService cacheService)
     {
         _dbContext = dbContext;
+        _cacheService = cacheService;
     }
 
     public async Task<Result> Handle(UpdateCategoryCommand request, CancellationToken cancellationToken)
@@ -49,10 +52,13 @@ public sealed class UpdateCategoryCommandHandler : IRequestHandler<UpdateCategor
             request.NamePrs,
             request.NamePs,
             request.IconName ?? string.Empty,
+            request.ImageUrl,
             request.ParentId,
             level);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _cacheService.InvalidateCategoriesCacheAsync(cancellationToken);
 
         return Result.Success();
     }

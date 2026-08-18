@@ -14,6 +14,7 @@ public sealed record CategoryDto(
     string NamePrs,
     string NamePs,
     string IconName,
+    string? ImageUrl,
     Guid? ParentId,
     int Level);
 
@@ -22,25 +23,24 @@ public sealed record GetCategoriesQuery() : IRequest<Result<List<CategoryDto>>>;
 public sealed class GetCategoriesQueryHandler : IRequestHandler<GetCategoriesQuery, Result<List<CategoryDto>>>
 {
     private readonly IApplicationDbContext _dbContext;
-    private readonly Microsoft.Extensions.Caching.Distributed.IDistributedCache _cache;
+    private readonly IRedisCacheService _cacheService;
 
-    public GetCategoriesQueryHandler(IApplicationDbContext dbContext, Microsoft.Extensions.Caching.Distributed.IDistributedCache cache)
+    public GetCategoriesQueryHandler(IApplicationDbContext dbContext, IRedisCacheService cacheService)
     {
         _dbContext = dbContext;
-        _cache = cache;
+        _cacheService = cacheService;
     }
 
     public async Task<Result<List<CategoryDto>>> Handle(GetCategoriesQuery request, CancellationToken cancellationToken)
     {
         var culture = CultureInfo.CurrentUICulture.Name;
-        var cacheKey = $"Categories_{culture}";
+        var version = await _cacheService.GetCategoriesCacheVersionAsync(cancellationToken);
+        var cacheKey = $"Categories_{culture}_v{version}";
 
-        var cachedData = await _cache.GetStringAsync(cacheKey, cancellationToken);
-        if (!string.IsNullOrEmpty(cachedData))
+        var cachedCategories = await _cacheService.GetAsync<List<CategoryDto>>(cacheKey, cancellationToken);
+        if (cachedCategories != null)
         {
-            var cachedCategories = System.Text.Json.JsonSerializer.Deserialize<List<CategoryDto>>(cachedData);
-            if (cachedCategories != null)
-                return Result.Success(cachedCategories);
+            return Result.Success(cachedCategories);
         }
 
         var categories = await _dbContext.Categories
@@ -53,15 +53,12 @@ public sealed class GetCategoriesQueryHandler : IRequestHandler<GetCategoriesQue
                 c.NamePrs,
                 c.NamePs,
                 c.IconName,
+                c.ImageUrl,
                 c.ParentId,
                 c.Level))
             .ToListAsync(cancellationToken);
             
-        var cacheOptions = new Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions
-        {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
-        };
-        await _cache.SetStringAsync(cacheKey, System.Text.Json.JsonSerializer.Serialize(categories), cacheOptions, cancellationToken);
+        await _cacheService.SetAsync(cacheKey, categories, TimeSpan.FromMinutes(30), cancellationToken);
 
         return Result.Success(categories);
     }
